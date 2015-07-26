@@ -1,0 +1,201 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>BGem3</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=375, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+	<script type="text/javascript" src="src/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="src/gs/TimelineLite.min.js"></script>
+    <script type="text/javascript" src="src/gs/TweenMax.min.js"></script>
+    <script type="text/javascript" src="src/gs/EasePack.min.js"></script>
+
+    <script type="text/javascript" src="BGem3.js"></script>
+
+    <script type="text/javascript">
+    	// ---------------- BGem3 (required) ----------------
+    	var scene,
+    		camera,
+    		renderer,
+            controller,
+            canvas,
+            ctx,
+            clickArea;
+
+        var maxWidth 		= 1920, // canvas width
+    		maxHeight 		= 1080, // canvas height
+            focalLength 	= 800,
+            animationFrame 	= true, // true:requestAnimationFrame, false:setInterval(fps)
+            fps 			= 24;	// for setInterval animation
+
+        // --------------------- SCENE ---------------------
+        var box,
+            floorArr = [],
+            globalPos = {x:0,y:-10,z:100},
+            texture = new Image();
+
+        var iOS = ( navigator.userAgent.match(/iPad|iPhone|iPod/g) ? true : false );
+
+
+        // ------------------ ON PAGE LOAD -----------------
+    	function init() {
+            if (iOS) {
+                animationFrame = false;
+                nodeNum = 50;
+            }
+            document.addEventListener('touchmove', function(event) {
+                event.preventDefault();
+            }, false);
+            canvas = document.getElementById("viewport");
+            ctx = canvas.getContext('2d');
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+
+    		scene = new BGem3.Scene();
+    		camera = new BGem3.Camera();
+
+            texture.src = "img/bg3.jpg";
+
+            box = new BGem3.Obj3D( new BGem3.CubeMesh({size:5}) );
+            box.mesh.textured = true;
+            box.gPosition = globalPos;
+            box.lPosition = {x:0,y:0,z:0};
+            scene.add(box);
+
+            for (var i=0;i<50;i++) {
+                var floor = new BGem3.Obj3D( new BGem3.CubeMesh({size:3}) );
+                floor.mesh.textured = true;
+                floor.gPosition = globalPos;
+                var fy = Math.floor(i/5);
+                var fx = Math.floor(i - fy*5);
+                floor.lPosition = {x:fx*8-12,y:25,z:fy*8-12};
+                floorArr.push(floor);
+                scene.add(floor);
+            }
+
+            // pre-render action
+            scene.action = function() {
+                /*renderer.debug.push(["gRot",BGem3.Math.round2(scene.objs[0].gRotation.x)+","+BGem3.Math.round2(scene.objs[0].gRotation.y)]);
+                renderer.debug.push(["lRot",BGem3.Math.round2(scene.objs[0].lRotation.x)+","+BGem3.Math.round2(scene.objs[0].lRotation.y)]);
+                renderer.debug.push(["gPos",BGem3.Math.round2(scene.objs[0].gPosition.x)+","+BGem3.Math.round2(scene.objs[0].gPosition.y)]);
+                renderer.debug.push(["lPos",BGem3.Math.round2(scene.objs[0].lPosition.x)+","+BGem3.Math.round2(scene.objs[0].lPosition.y)]);
+                renderer.debug.push(["sgPos",BGem3.Math.round2(scene.objs[0].sgPosition.x)+","+BGem3.Math.round2(scene.objs[0].sgPosition.y)]);*/
+            };
+
+            renderer = new BGem3.Renderer();
+
+            // post-render action
+            renderer.post = function() {
+
+            };
+
+            // initialize animation
+            if (animationFrame) {
+                window.requestAnimationFrame(render);
+            } else {
+                animate = setInterval(render,renderer.interval);
+            }
+
+            // user control
+            clickArea = document.getElementById("click-area");
+            controller = new BGem3.Controller({div:clickArea});
+    	}
+    	// ---------------- END ON PAGE LOAD ----------------
+
+    	// render action
+        function render() {
+            renderer.render();
+            if (animationFrame) {
+                window.requestAnimationFrame(render);   
+            }
+        }
+
+    </script>
+
+    <style type="text/css">
+        body {
+            overflow:hidden;
+            background-color:#fff;
+        }
+    	#viewport {
+    		display:block;
+    		position:fixed;
+    		width:1920px;
+    		height:1080px;
+    		left:50%;
+    		top:50%;
+    		margin-left:-960px;
+    		margin-top:-540px;
+            z-index:1;
+    	}
+        #stats {
+            display:block;
+            position:fixed;
+            padding:10px;
+            margin:10px;
+            top:0px;
+            left:0px;
+            background-color:#000;
+            color:#fff;
+            font-family:'Helvetica',sans-serif;
+            font-size:10px;
+            width:100px;
+            z-index:10;
+        }
+        #scramble {
+            display:block;
+            position:fixed;
+            padding:10px;
+            margin:10px;
+            right:0px;
+            top:0px;
+            background-color:#000;
+            color:#fff;
+            font-family:'Helvetica',sans-serif;
+            font-size:10px;
+            z-index:10;
+            cursor:pointer;
+        }
+        #click-area {
+            display:block;
+            position:fixed;
+            width:100%;
+            height:100%;
+            left:0px;
+            top:0px;
+            margin:0px;
+            z-index:2;
+        }
+        .hidden {
+        	visibility:hidden;
+        	z-index:-10;
+        }
+        #debug {
+            display:inline-block;
+        }
+        *:focus {
+            outline:none;
+        }
+    </style>
+
+</head>
+<body onload="init()">
+
+	<canvas id="viewport">
+	</canvas>
+
+    <div id="click-area">
+    </div>
+
+    <div id="stats">
+        stats<br>
+        <span id="fps"></span><br>
+        <span id="debug"></span>
+    </div>
+
+    <div id="scramble" onclick="scramble()">scramble</div>
+
+</body>
+</html>
