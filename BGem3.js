@@ -364,13 +364,14 @@
                                         y0 = pts[p1].y, y1 = pts[p2].y, y2 = pts[p3].y,
                                         u0 = pts[p1].u, u1 = pts[p2].u, u2 = pts[p3].u,
                                         v0 = pts[p1].v, v1 = pts[p2].v, v2 = pts[p3].v;
-                                    var delta = u0*v1+v0*u2+u1*v2-v1*u2-v0*u1-u0*v2,
-                                        da = x0*v1+v0*x2+x1*v2-v1*x2-v0*x1-x0*v2,
-                                        db = u0*x1+x0*u2+u1*x2-x1*u2-x0*u1-u0*x2,
-                                        dc = u0*v1*x2+v0*x1*u2+x0*u1*v2-x0*v1*u2-v0*u1*x2-u0*x1*v2,
-                                        dd = y0*v1+v0*y2+y1*v2-v1*y2-v0*y1-y0*v2,
-                                        de = u0*y1+y0*u2+u1*y2-y1*u2-y0*u1-u0*y2,
-                                        df = u0*v1*y2+v0*y1*u2+y0*u1*v2-y0*v1*u2-v0*u1*y2-u0*y1*v2;
+                                    // Cramer's rule
+                                    var delta = u0*v1 + v0*u2 + u1*v2 - v1*u2 - v0*u1 - u0*v2,
+                                        da = x0*v1 + v0*x2 + x1*v2 - v1*x2 - v0*x1 - x0*v2,
+                                        db = u0*x1 + x0*u2 + u1*x2 - x1*u2 - x0*u1 - u0*x2,
+                                        dc = u0*v1*x2 + v0*x1*u2 + x0*u1*v2 - x0*v1*u2 - v0*u1*x2 - u0*x1*v2,
+                                        dd = y0*v1 + v0*y2 + y1*v2 - v1*y2 - v0*y1 - y0*v2,
+                                        de = u0*y1 + y0*u2 + u1*y2 - y1*u2 - y0*u1 - u0*y2,
+                                        df = u0*v1*y2 + v0*y1*u2 + y0*u1*v2 - y0*v1*u2 - v0*u1*y2 - u0*y1*v2;
                                     ctx.transform(
                                         da/delta, dd/delta,
                                         db/delta, de/delta,
@@ -436,7 +437,7 @@
                 y2 = pts[3].y - pts[1].y;
             var m1 = y1/x1,
                 m2 = y2/x2,
-                b1 = p1.y - m1*p1.x,
+                b1 = p1.y - m1*p1.x, // y = mx + b
                 b2 = p2.y - m2*p2.x,
                 mx = (b2-b1) / (m1-m2),
                 my = m1*mx + b1;
