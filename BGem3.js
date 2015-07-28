@@ -123,29 +123,35 @@
             12. post-action
         */
         this.moveCam = function(cb) {
+            var step = cameraController.step;
+            var angle = camera.rotation;
             if (cameraController.w) {
-                camera.position.z+=1;
+                camera.position.z+=Math.cos(angle.y*Math.PI/180)*step;
+                camera.position.x-=Math.sin(angle.y*Math.PI/180)*step;
             }
             if (cameraController.a) {
-                camera.position.x-=1;
+                camera.position.z-=Math.sin(angle.y*Math.PI/180)*step;
+                camera.position.x-=Math.cos(angle.y*Math.PI/180)*step;
             }
             if (cameraController.s) {
-                camera.position.z-=1;
+                camera.position.z-=Math.cos(angle.y*Math.PI/180)*step;
+                camera.position.x+=Math.sin(angle.y*Math.PI/180)*step;
             }
             if (cameraController.d) {
-                camera.position.x+=1;
+                camera.position.z+=Math.sin(angle.y*Math.PI/180)*step;
+                camera.position.x+=Math.cos(angle.y*Math.PI/180)*step;
             }
             if (cameraController.u) {
-                camera.rotation.x+=1;
+                camera.rotation.x+=step;
             }
             if (cameraController.o) {
-                camera.rotation.x-=1;
+                camera.rotation.x-=step;
             }
             if (cameraController.l) {
-                camera.rotation.y+=1;
+                camera.rotation.y+=step;
             }
             if (cameraController.r) {
-                camera.rotation.y-=1;
+                camera.rotation.y-=step;
             }
             cb('local',renderer.translate);
         };
@@ -524,6 +530,7 @@
     };
 
     BGem3.CameraController = function() {
+        this.step = 1;
         this.w = false;
         this.a = false;
         this.s = false;
