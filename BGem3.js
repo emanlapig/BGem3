@@ -114,8 +114,8 @@
             3. translate local
             4. rotate global
             5. translate global
-            6. rotate camera
-            7. translate camera
+            6. translate camera
+            7. rotate camera
             8. project 3d to 2d
             9. z-sort objects
             10. draw to canvas
@@ -535,57 +535,57 @@
         $(window).bind({
             keydown: function(event) {
                 switch (event.keyCode) {
-                    case 87:
-                        cameraController.w = true; // W
+                    case 87: // W
+                        cameraController.w = true;
                         break;
-                    case 65:
-                        cameraController.a = true; // A
+                    case 65: // A
+                        cameraController.a = true;
                         break;
-                    case 83:
-                        cameraController.s = true; // S
+                    case 83: // S
+                        cameraController.s = true;
                         break;
-                    case 68:
-                        cameraController.d = true; // D
+                    case 68: // D
+                        cameraController.d = true;
                         break;
-                    case 38:
-                        cameraController.u = true; // up
+                    case 38: // up
+                        cameraController.u = true;
                         break;
-                    case 40:
-                        cameraController.o = true; // down
+                    case 40: // down
+                        cameraController.o = true;
                         break;
-                    case 37:
-                        cameraController.l = true; // left
+                    case 37: // left
+                        cameraController.l = true;
                         break;
-                    case 39:
-                        cameraController.r = true; // right
+                    case 39: // right
+                        cameraController.r = true;
                         break;
                 }
             },
             keyup: function(event) {
                 switch (event.keyCode) {
-                    case 87:
-                        cameraController.w = false; // W
+                    case 87: // W
+                        cameraController.w = false;
                         break;
-                    case 65:
-                        cameraController.a = false; // A
+                    case 65: // A
+                        cameraController.a = false;
                         break;
-                    case 83:
-                        cameraController.s = false; // S
+                    case 83: // S
+                        cameraController.s = false;
                         break;
-                    case 68:
-                        cameraController.d = false; // D
+                    case 68: // D
+                        cameraController.d = false;
                         break;
-                    case 38:
-                        cameraController.u = false; // up
+                    case 38: // up
+                        cameraController.u = false;
                         break;
-                    case 40:
-                        cameraController.o = false; // down
+                    case 40: // down
+                        cameraController.o = false;
                         break;
-                    case 37:
-                        cameraController.l = false; // left
+                    case 37: // left
+                        cameraController.l = false;
                         break;
-                    case 39:
-                        cameraController.r = false; // right
+                    case 39: // right
+                        cameraController.r = false;
                         break;
                 }
             }

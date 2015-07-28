@@ -26,10 +26,10 @@
 			clickArea;
 
 		var maxWidth 		= 1920, // canvas width
-			maxHeight 		= 1080, // canvas height
-			focalLength 	= 800,
-			animationFrame 	= true, // true:requestAnimationFrame, false:setInterval(fps)
-			fps 			= 24;	// for setInterval animation
+			maxHeight		= 1080, // canvas height
+			focalLength		= 800,
+			animationFrame	= true, // true:requestAnimationFrame, false:setInterval(fps)
+			fps				= 24;	// for setInterval animation
 
 		// --------------------- SCENE ---------------------
 		var nodes = [],
@@ -59,13 +59,6 @@
 			camera = new BGem3.Camera();
 
 			texture.src = "img/bg3.jpg";
-
-			/*box = new BGem3.Obj3D( new BGem3.CubeMesh({size:5}) );
-			box.mesh.textured = true;
-			box.gPosition = globalPos;
-			box.lPosition = {x:0,y:0,z:0};
-			box.gRotation = {x:10,y:10,z:0};
-			scene.add(box)*/
 
 			// generate nodes
 			for (var i=0;i<nodeNum;i++) {
