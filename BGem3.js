@@ -151,29 +151,6 @@
         };
         this.rotate = function(lg,cb) {
             for (var i=0;i<scene.objs.length;i++) {
-                // X AXIS
-                for (var k=0;k<scene.objs[i].transform.length;k++) {
-                    var vy = scene.objs[i].transform[k].y,
-                        vz = scene.objs[i].transform[k].z,
-                        angle = BGem3.Math.getAngle(0,0,vy,vz);
-                    switch (lg) {
-                        case 'local':
-                            angle2 = angle - (scene.objs[i].lRotation.x * Math.PI/180);
-                            break;
-                        case 'global':
-                            angle2 = angle - (scene.objs[i].gRotation.x * Math.PI/180);
-                            break;
-                        case 'camera':
-                            angle2 = angle - (camera.rotation.x * Math.PI/180);
-                            break;
-                    }
-                    if (angle2>2*Math.PI) {
-                        angle2-=2*Math.PI;
-                    }
-                    var r = BGem3.Math.getDist(0,0,vy,vz);
-                    scene.objs[i].transform[k].y = Math.cos(angle2) * r;
-                    scene.objs[i].transform[k].z = Math.sin(angle2) * r;
-                }
                 // Y AXIS
                 for (var j=0;j<scene.objs[i].transform.length;j++) {
                     var vx = scene.objs[i].transform[j].x,
@@ -219,6 +196,29 @@
                     var r = BGem3.Math.getDist(0,0,vx,vy);
                     scene.objs[i].transform[l].x = Math.cos(angle2) * r;
                     scene.objs[i].transform[l].y = Math.sin(angle2) * r;
+                }
+                // X AXIS
+                for (var k=0;k<scene.objs[i].transform.length;k++) {
+                    var vy = scene.objs[i].transform[k].y,
+                        vz = scene.objs[i].transform[k].z,
+                        angle = BGem3.Math.getAngle(0,0,vy,vz);
+                    switch (lg) {
+                        case 'local':
+                            angle2 = angle - (scene.objs[i].lRotation.x * Math.PI/180);
+                            break;
+                        case 'global':
+                            angle2 = angle - (scene.objs[i].gRotation.x * Math.PI/180);
+                            break;
+                        case 'camera':
+                            angle2 = angle - (camera.rotation.x * Math.PI/180);
+                            break;
+                    }
+                    if (angle2>2*Math.PI) {
+                        angle2-=2*Math.PI;
+                    }
+                    var r = BGem3.Math.getDist(0,0,vy,vz);
+                    scene.objs[i].transform[k].y = Math.cos(angle2) * r;
+                    scene.objs[i].transform[k].z = Math.sin(angle2) * r;
                 }
                 // (on mouseup) apply transform to local geometry
                 if (lg=='global' && scene.objs[i].applyGlobalRot) {
