@@ -62,7 +62,7 @@
 
 			// generate nodes
 			for (var i=0;i<nodeNum;i++) {
-				var node = new BGem3.Obj3D( new BGem3.CubeMesh({size:3}) );
+				var node = new BGem3.Obj3D( new BGem3.AnchorPt() );
 				node.mesh.textured = true;
 				node.gPosition = globalPos;
 				node.lPosition = {

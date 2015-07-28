@@ -14,6 +14,16 @@
         this.position = {x:0,y:0,z:0};
         this.rotation = {x:0,y:0,z:0};
         this.focalLength = focalLength;
+        this.friction = 0.2;
+        //keyboard input
+        this.w = 0;
+        this.a = 0;
+        this.s = 0;
+        this.d = 0;
+        this.u = 0; // up
+        this.o = 0; // down
+        this.l = 0; // left
+        this.r = 0; // right
     };
 
     BGem3.Obj3D = function(mesh) {
@@ -35,9 +45,6 @@
     BGem3.Mesh = function() {
         this.vertices = [];
         this.faces = [];
-        this.makeTransform = function() {
-            this.transform = JSON.parse(JSON.stringify(this.vertices));
-        };
         this.stroke = true;
         this.strokeStyle = "";
         this.fill = false;
@@ -67,7 +74,6 @@
             [5,6,2,1,[102,45,145,1],true,texture,false], // top
             [4,3,7,8,[102,45,145,1],true,texture,false]  // bottom
         ];
-        this.makeTransform();
     };
     BGem3.CubeMesh.prototype = new BGem3.Mesh();
 
@@ -84,7 +90,6 @@
         this.faces = [
             [1,2,3,4,[102,45,145,1],true,texture,true]
         ];
-        this.makeTransform();
         this.lockRotation = true;
     };
     BGem3.AnchorPt.prototype = new BGem3.Mesh();
@@ -123,35 +128,59 @@
             12. post-action
         */
         this.moveCam = function(cb) {
-            var step = cameraController.step;
-            var angle = camera.rotation;
-            if (cameraController.w) {
-                camera.position.z+=Math.cos(angle.y*Math.PI/180)*step;
-                camera.position.x-=Math.sin(angle.y*Math.PI/180)*step;
+            var friction = BGem3.Math.round2(camera.friction);
+            var angle = camera.rotation.y;
+            if (camera.w>0) {
+                camera.position.z += Math.cos(angle*Math.PI/180) * camera.w;
+                camera.position.x -= Math.sin(angle*Math.PI/180) * camera.w;
+                if (camera.w<1) {
+                    camera.w -= friction;
+                }
             }
-            if (cameraController.a) {
-                camera.position.z-=Math.sin(angle.y*Math.PI/180)*step;
-                camera.position.x-=Math.cos(angle.y*Math.PI/180)*step;
+            if (camera.s>0) {
+                camera.position.z -= Math.cos(angle*Math.PI/180) * camera.s;
+                camera.position.x += Math.sin(angle*Math.PI/180) * camera.s;
+                if (camera.s<1) {
+                    camera.s -= friction;
+                }
             }
-            if (cameraController.s) {
-                camera.position.z-=Math.cos(angle.y*Math.PI/180)*step;
-                camera.position.x+=Math.sin(angle.y*Math.PI/180)*step;
+            if (camera.a>0) {
+                camera.position.z -= Math.sin(angle*Math.PI/180) * camera.a;
+                camera.position.x -= Math.cos(angle*Math.PI/180) * camera.a;
+                if (camera.a<1) {
+                    camera.a -= friction;
+                }
             }
-            if (cameraController.d) {
-                camera.position.z+=Math.sin(angle.y*Math.PI/180)*step;
-                camera.position.x+=Math.cos(angle.y*Math.PI/180)*step;
+            if (camera.d>0) {
+                camera.position.z += Math.sin(angle*Math.PI/180) * camera.d;
+                camera.position.x += Math.cos(angle*Math.PI/180) * camera.d;
+                if (camera.d<1) {
+                    camera.d -= friction;
+                }
             }
-            if (cameraController.u) {
-                camera.rotation.x+=step;
+            if (camera.u>0) {
+                camera.rotation.x += camera.u;
+                if (camera.u<1) {
+                    camera.u -= 0.2;
+                }
             }
-            if (cameraController.o) {
-                camera.rotation.x-=step;
+            if (camera.o>0) {
+                camera.rotation.x -= camera.o;
+                if (camera.o<1) {
+                    camera.o -= 0.2;
+                }
             }
-            if (cameraController.l) {
-                camera.rotation.y+=step;
+            if (camera.l>0) {
+                camera.rotation.y += camera.l;
+                if (camera.l<1) {
+                    camera.l -= 0.2;
+                }
             }
-            if (cameraController.r) {
-                camera.rotation.y-=step;
+            if (camera.r>0) {
+                camera.rotation.y -= camera.r;
+                if (camera.r<1) {
+                    camera.r -= 0.2;
+                }
             }
             cb('local',renderer.translate);
         };
@@ -162,16 +191,12 @@
                     var vx = scene.objs[i].transform[j].x,
                         vz = scene.objs[i].transform[j].z,
                         angle = BGem3.Math.getAngle(0,0,vx,vz);
-                    switch (lg) {
-                        case 'local':
-                            angle2 = angle - (scene.objs[i].lRotation.y * Math.PI/180);
-                            break;
-                        case 'global':
-                            angle2 = angle - (scene.objs[i].gRotation.y * Math.PI/180);
-                            break;
-                        case 'camera':
-                            angle2 = angle - (camera.rotation.y * Math.PI/180);
-                            break;
+                    if (lg=='local') {
+                        angle2 = angle - (scene.objs[i].lRotation.y * Math.PI/180);
+                    } else if (lg=="global") {
+                        angle2 = angle - (scene.objs[i].gRotation.y * Math.PI/180);
+                    } else {
+                        angle2 = angle - (camera.rotation.y * Math.PI/180);
                     }
                     if (angle2>2*Math.PI) {
                         angle2-=2*Math.PI;
@@ -185,16 +210,12 @@
                     var vx = scene.objs[i].transform[l].x,
                         vy = scene.objs[i].transform[l].y,
                         angle = BGem3.Math.getAngle(0,0,vx,vy);
-                    switch (lg) {
-                        case 'local':
-                            angle2 = angle - (scene.objs[i].lRotation.z * Math.PI/180);
-                            break;
-                        case 'global':
-                            angle2 = angle - (scene.objs[i].gRotation.z * Math.PI/180);
-                            break;
-                        case 'camera':
-                            angle2 = angle - (camera.rotation.z * Math.PI/180);
-                            break;
+                    if (lg=='local') {
+                        angle2 = angle - (scene.objs[i].lRotation.z * Math.PI/180);
+                    } else if (lg=="global") {
+                        angle2 = angle - (scene.objs[i].gRotation.z * Math.PI/180);
+                    } else {
+                        angle2 = angle - (camera.rotation.z * Math.PI/180);
                     }
                     if (angle2>2*Math.PI) {
                         angle2-=2*Math.PI;
@@ -208,16 +229,12 @@
                     var vy = scene.objs[i].transform[k].y,
                         vz = scene.objs[i].transform[k].z,
                         angle = BGem3.Math.getAngle(0,0,vy,vz);
-                    switch (lg) {
-                        case 'local':
-                            angle2 = angle - (scene.objs[i].lRotation.x * Math.PI/180);
-                            break;
-                        case 'global':
-                            angle2 = angle - (scene.objs[i].gRotation.x * Math.PI/180);
-                            break;
-                        case 'camera':
-                            angle2 = angle - (camera.rotation.x * Math.PI/180);
-                            break;
+                    if (lg=='local') {
+                        angle2 = angle - (scene.objs[i].lRotation.x * Math.PI/180);
+                    } else if (lg=="global") {
+                        angle2 = angle - (scene.objs[i].gRotation.x * Math.PI/180);
+                    } else {
+                        angle2 = angle - (camera.rotation.x * Math.PI/180);
                     }
                     if (angle2>2*Math.PI) {
                         angle2-=2*Math.PI;
@@ -239,6 +256,19 @@
                 renderer.debug.push(["f","rotate global"]);
                 cb('global',renderer.translate);
             } else {
+                for (var i=0;i<scene.objs.length;i++) {
+                    // if rotation locked, revert rotation
+                    scene.objs[i].sgPosition.x = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].x;
+                    scene.objs[i].sgPosition.y = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].y;
+                    scene.objs[i].sgPosition.z = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].z;
+                    if (scene.objs[i].mesh.lockRotation) {
+                        for (var j=1;j<scene.objs[i].transform.length;j++) {
+                            scene.objs[i].transform[j].x = scene.objs[i].mesh.vertices[j].x + scene.objs[i].sgPosition.x;
+                            scene.objs[i].transform[j].y = scene.objs[i].mesh.vertices[j].y + scene.objs[i].sgPosition.y;
+                            scene.objs[i].transform[j].z = scene.objs[i].mesh.vertices[j].z + scene.objs[i].sgPosition.z;
+                        }
+                    }
+                }
                 renderer.debug.push(["f","rotate camera"]);
                 cb(renderer.zSortObjs);
             }
@@ -265,20 +295,6 @@
                 renderer.debug.push(["f","translate local"]);
                 cb('global',renderer.translate);
             } else if (lg=='global') {
-                for (var i=0;i<scene.objs.length;i++) {
-                    // update superglobal position
-                    scene.objs[i].sgPosition.x = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].x;
-                    scene.objs[i].sgPosition.y = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].y;
-                    scene.objs[i].sgPosition.z = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].z;
-                    // if rotation locked, revert rotation
-                    if (scene.objs[i].mesh.lockRotation) {
-                        for (var j=1;j<scene.objs[i].transform.length;j++) {
-                            scene.objs[i].transform[j].x = scene.objs[i].mesh.vertices[j].x + scene.objs[i].sgPosition.x;
-                            scene.objs[i].transform[j].y = scene.objs[i].mesh.vertices[j].y + scene.objs[i].sgPosition.y;
-                            scene.objs[i].transform[j].z = scene.objs[i].mesh.vertices[j].z + scene.objs[i].sgPosition.z;
-                        }
-                    }
-                }
                 renderer.debug.push(["f","translate global"]);
                 cb('camera',renderer.rotate);
             } else {
@@ -338,7 +354,16 @@
                         zInd += pts[k].v3.z;
                     }
                     var visible = scene.objs[i].visible;
-                    var zObj = {obj:scene.objs[i], face:face, p1:p1, p2:p2, p3:p3, p4:p4, zInd:zInd, visible:visible, fillStyle:style, cull:false, textured:textured};
+                    var zObj = {
+                        obj:scene.objs[i], 
+                        face:face, 
+                        p1:p1, p2:p2, p3:p3, p4:p4, 
+                        zInd:zInd, 
+                        visible:visible, 
+                        fillStyle:style, 
+                        cull:false, 
+                        textured:textured
+                    };
                     renderer.zSort.push(zObj);
                 }
             }
@@ -530,69 +555,60 @@
     };
 
     BGem3.CameraController = function() {
-        this.step = 1;
-        this.w = false;
-        this.a = false;
-        this.s = false;
-        this.d = false;
-        this.u = false;
-        this.o = false;
-        this.l = false;
-        this.r = false;
         $(window).bind({
             keydown: function(event) {
                 switch (event.keyCode) {
                     case 87: // W
-                        cameraController.w = true;
+                        camera.w = 1;
                         break;
                     case 65: // A
-                        cameraController.a = true;
+                        camera.a = 1;
                         break;
                     case 83: // S
-                        cameraController.s = true;
+                        camera.s = 1;
                         break;
                     case 68: // D
-                        cameraController.d = true;
+                        camera.d = 1;
                         break;
                     case 38: // up
-                        cameraController.u = true;
+                        camera.u = 1;
                         break;
                     case 40: // down
-                        cameraController.o = true;
+                        camera.o = 1;
                         break;
                     case 37: // left
-                        cameraController.l = true;
+                        camera.l = 1;
                         break;
                     case 39: // right
-                        cameraController.r = true;
+                        camera.r = 1;
                         break;
                 }
             },
             keyup: function(event) {
                 switch (event.keyCode) {
                     case 87: // W
-                        cameraController.w = false;
+                        camera.w = 0.8;
                         break;
                     case 65: // A
-                        cameraController.a = false;
+                        camera.a = 0.8;
                         break;
                     case 83: // S
-                        cameraController.s = false;
+                        camera.s = 0.8;
                         break;
                     case 68: // D
-                        cameraController.d = false;
+                        camera.d = 0.8;
                         break;
                     case 38: // up
-                        cameraController.u = false;
+                        camera.u = 0.8;
                         break;
                     case 40: // down
-                        cameraController.o = false;
+                        camera.o = 0.8;
                         break;
                     case 37: // left
-                        cameraController.l = false;
+                        camera.l = 0.8;
                         break;
                     case 39: // right
-                        cameraController.r = false;
+                        camera.r = 0.8;
                         break;
                 }
             }

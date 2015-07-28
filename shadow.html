@@ -59,8 +59,9 @@
 
             texture.src = "img/bg3.jpg";
 
-            box = new BGem3.Obj3D( new BGem3.CubeMesh({size:5}) );
+            box = new BGem3.Obj3D( new BGem3.AnchorPt() );
             box.mesh.textured = true;
+            box.mesh.lockRotation = false;
             box.gPosition = globalPos;
             box.lPosition = {x:0,y:0,z:0};
             scene.add(box);
