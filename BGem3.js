@@ -613,7 +613,7 @@
                 }
             }
         });
-    }
+    };
 
     BGem3.MathFunc = function() {
         this.getDist = function(x1,y1,x2,y2) {
