@@ -1,0 +1,858 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>AngelAttack</title>
+
+<script type="text/javascript" src="Cube.js"></script>
+<script type="text/javascript" src="Octahedron.js"></script>
+<script type="text/javascript" src="FloorGrid.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+<script type="text/javascript">
+
+	function init() {
+		window.ctx = document.getElementById("canvas").getContext("2d");
+		window.can2 = document.createElement("canvas");
+		window.ctx2 = can2.getContext("2d");
+		window.can3 = document.createElement("canvas");
+		window.ctx3 = can3.getContext("2d");
+
+		window.focalLength = 300;
+		window.framerate = 30;
+
+		window.panAngle = 1;
+		window.tiltAngle = 0;
+		window.rollAngle = 0;
+
+		window.mouseX = 0;
+		window.mouseY = 0;
+		window.mouseXd = 0;
+		window.mouseYd = 0;
+		window.mouseDown = false;
+		window.divMO = false;
+
+		window.shift = false;
+
+		window.mTouchPosX = 0;
+		window.mTouchPosY = 0;
+		window.touch = false;
+
+		window.pageX = 0;
+		window.pageY = 0;
+		window.centerX = window.innerWidth/2;
+		window.centerY = window.innerHeight/2;
+		window.cubeStart = 0;
+
+		window.light = new Array(-500,500,100);
+
+		window.fog = new Array(142,214,255);
+
+		window.angel = new Octahedron(200,
+								0,0,600,
+								0,-250,0,
+								0,0,0,1);
+
+		window.objArray = new Array(angel);
+
+		window.img1 = document.createElement('IMG');
+		img1.src = "img1.jpg"
+		window.img2 = document.createElement('IMG');
+		img2.src = "img2.jpg"
+		window.img3 = document.createElement('IMG');
+		img3.src = "img3.jpg"
+		window.img4 = document.createElement('IMG');
+		img4.src = "img4.jpg"
+		window.img5 = document.createElement('IMG');
+		img5.src = "img5.jpg"
+
+		window.imgCounter = 0;
+		
+		for (var i=0;i<100;i++) {
+			var cname = "cube"+i;
+			var bheight = dice()*10/2;
+			var bpos = dice()*100;
+			var bpos2 = dice()*100;
+			if (dice()>5) {
+				bpos*=-1;
+			}
+			if (dice()>5) {
+				bpos2*=-1;
+			}
+			window[cname] = new Cube(10,-bheight,10,
+								0,0,600,
+								bpos/2,-bheight+100,bpos2/2,
+								0,0,0,1);
+			objArray.push(window[cname]);
+		}
+
+		gamePlay = setInterval("enterFrame()",1000/framerate);
+
+
+		// MOUSE EVENT LISTENERS
+		$("#touchZone").mousemove(function(e){
+			mouseXd = mouseX - e.pageX;
+			mouseYd = mouseY - e.pageY;
+			document.getElementById("disp").innerHTML = mouseXd+","+mouseYd;
+			mouseX = e.pageX;
+			mouseY = e.pageY;
+			document.getElementById("coords").innerHTML = mouseX+","+mouseY;
+		});
+
+		/*$("div").mouseover(function(e) {
+			document.getElementById("divMO").innerHTML = "divMO";
+			divMO = true;
+		});
+
+		$("div").mouseout(function(e) {
+			document.getElementById("divMO").innerHTML = "&nbsp;";
+			divMO = false;
+		});*/
+
+		$("#touchZone").mousedown(function(e){
+			if (!divMO) {
+				document.getElementById("mouseD").innerHTML = "mouseDown";
+				mouseDown = true;
+			}
+		});
+
+		$("#touchZone").mouseup(function(e){
+			document.getElementById("mouseD").innerHTML = "&nbsp;";
+			mouseDown = false;
+		});
+
+		window.addEventListener('keydown',onKeyDown,true);
+		window.addEventListener('keyup',onKeyUp,true);
+
+		document.getElementById("touchZone").addEventListener("touchstart", touchDown, false);
+        document.getElementById("touchZone").addEventListener("touchmove", touchXY, true);
+        document.getElementById("touchZone").addEventListener("touchend", touchUp, false);
+
+	}
+
+
+
+
+	//-------------------EVENT HANDLERS---------------------
+
+	function onKeyDown(e) {
+		switch (e.keyCode) {
+			case 16: // shift
+				shift = true;
+				break;
+		}
+	}
+
+	function onKeyUp(e) {
+		switch (e.keyCode) {
+			case 16: // shift
+				shift = false;
+				break;
+		}
+	}
+
+	function touchDown(evt) {
+		evt.preventDefault();
+		evt.stopPropagation();
+		mTouchPosX = evt.targetTouches[0].pageX;
+		mTouchPosY = evt.targetTouches[0].pageY;
+		touch = true;
+	}
+	
+	function touchXY(evt) {
+		evt.preventDefault();
+		evt.stopPropagation();
+		var touchMoveX = evt.targetTouches[0].pageX;
+		var touchMoveY = evt.targetTouches[0].pageY;
+		
+		mouseXd = -(mTouchPosX - touchMoveX)/100;
+		mouseYd = -(mTouchPosY - touchMoveY)/100;
+	}
+	
+	function touchUp(evt) {
+		touch = false;
+		//kU = false;
+		//kL = false;
+	}
+
+
+
+
+	//----------------------UTILITY BELT-----------------------
+
+	function dice() {
+		var d=Math.random()*10;
+		return d;	
+	}
+
+	function getDist(p1x,p1y,p2x,p2y) {
+		var dx = p1x-p2x;
+		var dy = p1y-p2y;
+		var dist = Math.sqrt(dx*dx+dy*dy);
+		return dist;
+	}
+
+	function vectorLength(x,y,z) {
+		var len = Math.sqrt(x*x+y*y+z*z);
+		return len;
+	}
+
+	function getAngle(p1x,p1y,p2x,p2y) {
+		var thisAngle=0;
+		// quad I
+		if (p2x>=p1x && p2y>=p1y) {
+			thisAngle = Math.atan((p2y-p1y)/(p2x-p1x));	
+		}
+		// quad II
+		else if (p2x<=p1x && p2y>=p1y) {
+			thisAngle = 0.5*Math.PI - Math.atan((p2x-p1x)/(p2y-p1y));	
+		}
+		// quad III
+		else if (p2x<=p1x && p2y<=p1y) {
+			thisAngle = Math.PI + Math.atan((p2y-p1y)/(p2x-p1x));
+		}
+		// quad IV
+		else if (p2x>=p1x && p2y<=p1y) {
+			thisAngle = 1.5*Math.PI - Math.atan((p2x-p1x)/(p2y-p1y));
+		}
+		return thisAngle;
+	}
+
+
+
+
+	//---------------------MOVE GENERATORS----------------------
+
+	function makeMove() {
+		for (var i=0;i<objArray.length;i++) {
+			objArray[i].parentMove2.length=0;
+			objArray[i].childMove2.length=0;
+			genParentMove(objArray[i]);
+			genChildMove(objArray[i]);
+			doMove(objArray[i]);
+		}
+	}
+
+	function makeMoveRev() {
+		for (var i=0;i<objArray.length;i++) {
+			doMoveRev(objArray[i]);
+		}
+	}
+
+	function doMove(cube) {
+		for (var j=0;j<cube.parentMove2.length;j++) {
+			cube.parentMove.push(cube.parentMove2[j]);
+		}
+		for (var k=0;k<cube.childMove2.length;k++) {
+			cube.childMove.push(cube.childMove2[k]);
+		}
+	}
+
+	function doMoveRev(cube) {
+		for (var j=cube.parentMove2.length-1;j>=0;j--) {
+			for (var jj=0;jj<cube.parentMove2[j].length;jj++) {
+				cube.parentMove2[j][jj]*=-1;
+			}
+			cube.parentMove.push(cube.parentMove2[j]);
+		}
+		for (var k=cube.childMove2.length-1;k>=0;k--) {
+			for (var kk=0;kk<cube.childMove2[k].length;kk++) {
+				cube.childMove2[k][kk]*=-1;
+			}
+			cube.childMove.push(cube.childMove2[k]);
+		}
+	}
+
+	function genParentMove(cube) {
+		var rand = dice();
+		if (dice()<5) {
+			rand*=-1;
+		}
+		for (var i=0;i<100;i++) {
+			cube.parentMove2.push(new Array(5,0,0,0,0,0));
+		}
+	}
+
+	function genChildMove(cube) {
+		var rand = dice();
+		if (dice()<5) {
+			rand*=-1;
+		}
+		for (var i=0;i<100;i++) {
+			cube.childMove2.push(new Array(rand,rand,rand));
+		}
+	}
+
+
+
+
+	//-------------------ENTER FRAME HANDLER-------------------
+
+	function enterFrame() {
+		canvas.width=window.innerWidth;
+		canvas.height=window.innerHeight;
+		can2.width=window.innerWidth;
+		can2.height=window.innerHeight;
+		can3.width=window.innerWidth;
+		can3.height=window.innerHeight;
+
+		// MOUSE EVENT HANDLER
+		if (mouseDown || touch) {
+
+			if (Math.abs(mouseXd)<5) {
+				panAngle = 0;
+				rollAngle = 0;
+			}
+			if (Math.abs(mouseYd)<5) {
+				tiltAngle = 0;
+			}
+
+			tiltAngle += mouseYd;
+			if (!shift) {
+				panAngle += mouseXd;
+			} else {
+				rollAngle += mouseXd;
+			}
+		} else {
+			//panAngle = 0;
+			//tiltAngle = 0;
+			//rollAngle = 0;
+		}
+
+		mouseXd = 0;
+		mouseYd = 0;
+
+		imgCounter+=1;
+		if (imgCounter==11) {
+			imgCounter-=10
+		}
+
+		// OBJECT COMMANDS
+		for (var l=0;l<objArray.length;l++) {
+			var thisObj = objArray[l];
+
+			thisObj.childX += thisObj.childMove[0][0];
+			thisObj.childY += thisObj.childMove[0][1];
+			thisObj.childZ += thisObj.childMove[0][2];
+
+			thisObj.childMove.splice(0,1);
+			if (thisObj.childMove.length==0) {
+				thisObj.childMove.push(new Array(0,0,0));
+			}
+		}
+
+		// OBJECT SORTING/3D DRAWING
+		ctx2.clearRect(0,0,canvas.width,canvas.height);
+		//ctx.fillStyle="#C7C7C7";
+		//ctx.fillRect(0,0,canvas.width,canvas.height);
+
+		// add linear gradient
+	    var grd = ctx.createLinearGradient(0,0,0,canvas.height);
+	    // light blue
+	    grd.addColorStop(0, '#004CB3');   
+	    // dark blue
+	    grd.addColorStop(.5, '#8ED6FF');
+	    ctx.fillStyle = grd;
+	    ctx.fillRect(0,0,canvas.width,canvas.height);
+		
+		for (var k=0;k<objArray.length;k++) {
+			makeTrans(objArray[k]);
+			moveObj(objArray[k]);
+			translate(objArray[k]);
+			project3d(objArray[k]);
+		}
+
+		for (var j=0;j<objArray.length;j++) {
+			var thisObj = objArray[j];
+			objArray[j].prox = vectorLength(thisObj.anchorX,thisObj.anchorY,thisObj.anchorZ);
+		}
+
+		objArray.sort(function(a,b){return b.prox-a.prox;});
+
+		for (var i=0;i<objArray.length;i++) {
+			checkVis(objArray[i]);
+			draw2d(objArray[i]);
+		}
+
+		ctx.drawImage(can2,0,0);
+		ctx.drawImage(can3,0,0);
+	}
+
+
+
+
+	//------------------3D TRANSLATION/DRAWING------------------
+	
+	function makeTrans(cube) {
+		cube.pts3dtrans.length=0;
+		for (var i=0;i<cube.pts3d.length;i++) {
+			cube.pts3dtrans[i*3] = cube.pts3d[i][0];
+			cube.pts3dtrans[i*3+1] = cube.pts3d[i][1];
+			cube.pts3dtrans[i*3+2] = cube.pts3d[i][2];
+		}
+	}
+
+	function moveObj(cube) {
+		// MOVE PARENT
+		cube.pan-=panAngle-cube.parentMove[0][0];
+		cube.tilt-=tiltAngle-cube.parentMove[0][1];
+		cube.roll-=rollAngle-cube.parentMove[0][2];
+
+		cube.parentMove.splice(0,1);
+		if (cube.parentMove.length==0) {
+			cube.parentMove.push(new Array(0,0,0,0,0,0));
+		}
+
+		if (cube.pan>=360) {
+			cube.pan-=360;
+		}
+		if (cube.pan<=-360) {
+			cube.pan+=360;
+		}
+		if (cube.tilt>=360) {
+			cube.tilt-=360;
+		}
+		if (cube.tilt<=-360) {
+			cube.tilt+=360;
+		}
+		if (cube.roll>=360) {
+			cube.roll-=360;
+		}
+		if (cube.roll<=-360) {
+			cube.roll+=360;
+		}
+
+		// MOVE CHILD
+		for (var i=0;i<cube.pts3dtrans.length/3;i++) {
+			cube.pts3dtrans[i*3]+=cube.childX;
+			cube.pts3dtrans[i*3+1]+=cube.childY;
+			cube.pts3dtrans[i*3+2]+=cube.childZ;
+		}
+
+		// ROTATE
+		// PAN
+		for (var j=0;j<cube.pts3dtrans.length/3;j++) {
+			var thisPt = cube.pts3dtrans[j*3];
+			var thisPt2 = cube.pts3dtrans[j*3+2];
+			var thisAngle = getAngle(0,0,thisPt,thisPt2);
+			var newAngle = thisAngle - (cube.pan*Math.PI/180);
+			
+			if (newAngle>2*Math.PI) {
+				newAngle-=2*Math.PI;
+			}
+			
+			var r = getDist(0,0,thisPt,thisPt2);
+			cube.pts3dtrans[j*3] = Math.cos(newAngle) * r;
+			cube.pts3dtrans[j*3+2] = Math.sin(newAngle) * r;
+		}
+
+		// TILT
+		for (var k=0;k<cube.pts3dtrans.length/3;k++) {
+			var thisPt = cube.pts3dtrans[k*3+1];
+			var thisPt2 = cube.pts3dtrans[k*3+2];
+			var thisAngle = getAngle(0,0,thisPt,thisPt2);
+			var newAngle = thisAngle - (cube.tilt*Math.PI/180);
+				
+			if (newAngle>2*Math.PI) {
+				newAngle-=2*Math.PI;
+			}
+				
+			var r = getDist(0,0,thisPt,thisPt2);
+			cube.pts3dtrans[k*3+1] = Math.cos(newAngle) * r;
+			cube.pts3dtrans[k*3+2] = Math.sin(newAngle) * r;
+		}
+
+		// ROLL
+		for (var l=0;l<cube.pts3dtrans.length/3;l++) {
+			var thisPt = cube.pts3dtrans[l*3];
+			var thisPt2 = cube.pts3dtrans[l*3+1];
+			var thisAngle = getAngle(0,0,thisPt,thisPt2);
+			var newAngle = thisAngle - (cube.roll*Math.PI/180);
+				
+			if (newAngle>2*Math.PI) {
+				newAngle-=2*Math.PI;
+			}
+				
+			var r = getDist(0,0,thisPt,thisPt2);
+			cube.pts3dtrans[l*3] = Math.cos(newAngle) * r;
+			cube.pts3dtrans[l*3+1] = Math.sin(newAngle) * r;
+		}
+	}
+
+	function translate(cube) {
+		for (var i=0;i<cube.pts3dtrans.length/3;i++) {
+			cube.pts3dtrans[i*3] += cube.x3d;
+			cube.pts3dtrans[i*3+1] += cube.y3d;
+			cube.pts3dtrans[i*3+2] += cube.z3d;
+		}
+
+		var len = cube.pts3dtrans.length;
+		cube.anchorX = cube.pts3dtrans[len/3-3];
+		cube.anchorY = cube.pts3dtrans[len/3-2];
+		cube.anchorZ = cube.pts3dtrans[len/3-1];
+	}
+
+	function project3d(cube) {
+		centerX = canvas.width/2;
+		centerY = canvas.height/2;
+		for (var i=0;i<cube.pts3dtrans.length/3;i++) {
+			var scaleRatio = focalLength/cube.pts3dtrans[i*3+2];
+			cube.pts2d[i] = new Array();
+			if (cube.pts3dtrans[i*3+2]<0) {
+				
+				var pt1x = cube.pts3dtrans[i*3]+.1;
+				var pt2x = cube.pts3dtrans[i*3]+.1;
+				var pt3x = cube.pts3dtrans[i*3]+.1;
+				var pt1y = cube.pts3dtrans[i*3+1]+.1;
+				var pt2y = cube.pts3dtrans[i*3+1]+.1;
+				var pt3y = cube.pts3dtrans[i*3+1]+.1;
+				var pt1_2dx = pt1x * (focalLength/5) + centerX;
+				var pt1_2dy = pt1y * (focalLength/5) + centerY;
+				var pt2_2dx = pt2x * (focalLength/4) + centerX;
+				var pt2_2dy = pt2y * (focalLength/4) + centerY;
+				var pt3_2dx = pt3x * (focalLength/3) + centerX;
+				var pt3_2dy = pt3y * (focalLength/3) + centerY;
+				
+				var angle = getAngle(pt1_2dx,pt1_2dy,pt2_2dx,pt2_2dy);
+				
+				var dist1 = getDist(pt1_2dx,pt1_2dy,pt2_2dx,pt2_2dy);
+				var dist2 = getDist(pt1_2dx,pt1_2dy,pt3_2dx,pt3_2dy);
+				
+				var convF = dist2/dist1;
+				
+				cube.pts2d[i][0] = (Math.cos(angle) * dist1 * convF * -(cube.pts3dtrans[i*3+2]-2)) + pt3_2dx;
+				cube.pts2d[i][1] = (Math.sin(angle) * dist1 * convF * -(cube.pts3dtrans[i*3+2]-2)) + pt3_2dy;
+			} else {
+				cube.pts2d[i][0] = cube.pts3dtrans[i*3] * scaleRatio + centerX;
+				cube.pts2d[i][1] = cube.pts3dtrans[i*3+1] * scaleRatio + centerY;
+			}
+		}
+
+		var len = cube.pts2d.length;
+		cube.anchor2dx = cube.pts2d[len-1][0];
+		cube.anchor2dy = cube.pts2d[len-1][1];
+
+		/*if (cube===cube1) {
+			document.getElementById("text1").style.left=cube.anchor2dx+"px";
+			document.getElementById("text1").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube2) {
+			document.getElementById("text2").style.left=cube.anchor2dx+"px";
+			document.getElementById("text2").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube3) {
+			document.getElementById("text3").style.left=cube.anchor2dx+"px";
+			document.getElementById("text3").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube4) {
+			document.getElementById("text4").style.left=cube.anchor2dx+"px";
+			document.getElementById("text4").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube5) {
+			document.getElementById("text5").style.left=cube.anchor2dx+"px";
+			document.getElementById("text5").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube6) {
+			document.getElementById("text6").style.left=cube.anchor2dx+"px";
+			document.getElementById("text6").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube7) {
+			document.getElementById("text7").style.left=cube.anchor2dx+"px";
+			document.getElementById("text7").style.top=cube.anchor2dy+"px";
+		}
+		if (cube===cube8) {
+			document.getElementById("text8").style.left=cube.anchor2dx+"px";
+			document.getElementById("text8").style.top=cube.anchor2dy+"px";
+		}*/
+	}
+
+	function checkVis(cube) {
+		var vis=0;
+		for (var i=0;i<cube.pts3dtrans.length/3;i++) {
+			if (cube.pts3dtrans[i*3+2]>0) {
+				vis=1;
+			}
+		}
+		cube.visible = vis;
+	}
+
+	function draw2d(cube) {
+		if (cube.visible==1) {
+			
+			backfaceCull(cube);
+			
+			var R = cube.rgbColor[0];
+			var G = cube.rgbColor[1];
+			var B = cube.rgbColor[2];
+
+			for (var i=0;i<cube.facesArray.length;i++) {
+				var normal = getNormal(cube,cube.facesArray[i]);
+				var nAngle = normal.angle;
+				var shadow = (nAngle/Math.PI)*.2;
+				var shine = (1-nAngle/Math.PI)*1.3;
+
+				if (cube.facesArray[i].length==5) {
+					if (cube.facesArray[i][4]==1) {
+						var f1 = cube.facesArray[i][0];
+						var f2 = cube.facesArray[i][1];
+						var f3 = cube.facesArray[i][2];
+						var f4 = cube.facesArray[i][3];
+						
+						var pt1x = cube.pts2d[f1][0];
+						var pt1y = cube.pts2d[f1][1];
+						var pt2x = cube.pts2d[f2][0];
+						var pt2y = cube.pts2d[f2][1];
+						var pt3x = cube.pts2d[f3][0];
+						var pt3y = cube.pts2d[f3][1];
+						var pt4x = cube.pts2d[f4][0];
+						var pt4y = cube.pts2d[f4][1];
+
+						var litR = Math.floor((R*shadow)+(R*shine));
+						var litG = Math.floor((G*shadow)+(G*shine));
+						var litB = Math.floor((B*shadow)+(B*shine));
+
+						var fogPt = cube.pts3dtrans[f1];
+						var dist = vectorLength(cube.anchorX,cube.anchorY,cube.anchorZ);
+						var fogRatio = dist/1000;
+
+						if (fogRatio>1) {
+							fogRatio=1;
+						}
+
+						//alert(dist);
+
+						var Rd = litR-fog[0];
+						var fogR = Math.floor(litR-(Rd*fogRatio));
+						var Gd = litG-fog[1];
+						var fogG = Math.floor(litG-(Gd*fogRatio));
+						var Bd = litB-fog[2];
+						var fogB = Math.floor(litB-(Bd*fogRatio));
+
+						ctx2.beginPath();
+						ctx2.moveTo(pt1x,pt1y);
+						ctx2.lineTo(pt2x,pt2y);
+						ctx2.lineTo(pt3x,pt3y);
+						ctx2.lineTo(pt4x,pt4y);
+						ctx2.lineTo(pt1x,pt1y);
+						ctx2.closePath();
+						ctx2.strokeStyle="rgba("+fogR+","+fogG+","+fogB+","+1+")";
+						ctx2.stroke();
+						ctx2.fillStyle="rgba("+fogR+","+fogG+","+fogB+","+1+")";
+						ctx2.fill();
+
+						/*ctx2.beginPath();
+						ctx2.moveTo(pt1x,pt1y);
+						ctx2.lineTo(pt2x,pt2y);
+						ctx2.lineTo(pt3x,pt3y);
+						ctx2.lineTo(pt4x,pt4y);
+						ctx2.lineTo(pt1x,pt1y);
+						ctx2.closePath();
+						ctx2.strokeStyle="rgba("+fog[0]+","+fog[1]+","+fog[2]+","+fogRatio+")";
+						ctx2.stroke();
+						ctx2.fillStyle="rgba("+fog[0]+","+fog[1]+","+fog[2]+","+fogRatio+")";
+						ctx2.fill();*/
+
+						//alert("boop");
+					}
+				} else if (cube.facesArray[i].length==4) {
+					if (cube.facesArray[i][3]==1) {
+						var f1 = cube.facesArray[i][0];
+						var f2 = cube.facesArray[i][1];
+						var f3 = cube.facesArray[i][2];
+						
+						var pt1x = cube.pts2d[f1][0];
+						var pt1y = cube.pts2d[f1][1];
+						var pt2x = cube.pts2d[f2][0];
+						var pt2y = cube.pts2d[f2][1];
+						var pt3x = cube.pts2d[f3][0];
+						var pt3y = cube.pts2d[f3][1];
+
+						var newR = Math.floor((R*shadow)+(R*shine));
+						var newG = Math.floor((G*shadow)+(G*shine));
+						var newB = Math.floor((B*shadow)+(B*shine));
+
+						ctx2.beginPath();
+						ctx2.moveTo(pt1x,pt1y);
+						ctx2.lineTo(pt2x,pt2y);
+						ctx2.lineTo(pt3x,pt3y);
+						ctx2.lineTo(pt1x,pt1y);
+						ctx2.closePath();
+						ctx2.strokeStyle="rgba(0,0,0,"+1+")";
+						ctx2.stroke();
+						ctx2.fillStyle="rgba("+newR+","+newG+","+newB+","+1+")";
+						ctx2.fill();
+
+						if (cube===angel) {
+							if (i==2 || i==4) {
+								ctx3.beginPath();
+								ctx3.moveTo(pt1x,pt1y);
+								ctx3.lineTo(pt2x,pt2y);
+								ctx3.lineTo(pt3x,pt3y);
+								ctx3.lineTo(pt1x,pt1y);
+								ctx3.closePath();
+								ctx3.strokeStyle="rgba(0,0,0,"+1+")";
+								ctx3.stroke();
+								ctx3.clip();
+								switch (imgCounter) {
+									case 1:
+									case 2:
+										ctx3.drawImage(img1,0,0,window.innerWidth,window.innerHeight);
+										break;
+									case 3:
+									case 4:
+										ctx3.drawImage(img2,0,0,window.innerWidth,window.innerHeight);
+										break;
+									case 5:
+									case 6:
+										ctx3.drawImage(img3,0,0,window.innerWidth,window.innerHeight);
+										break;
+									case 7:
+									case 8:
+										ctx3.drawImage(img4,0,0,window.innerWidth,window.innerHeight);
+										break;
+									case 9:
+									case 10:
+										ctx3.drawImage(img5,0,0,window.innerWidth,window.innerHeight);
+										break;
+								}
+							}
+						}
+
+						//alert("boop");
+					}
+				}
+			}
+		}
+	}
+	
+	function getNormal(cube,face) {
+		var pt1 = face[0];
+		var pt2 = face[1];
+		var pt3 = face[2];
+		
+		var Ax = cube.pts3dtrans[pt2*3] - cube.pts3dtrans[pt1*3];
+		var Ay = cube.pts3dtrans[pt2*3+1] - cube.pts3dtrans[pt1*3+1];
+		var Az = cube.pts3dtrans[pt2*3+2] - cube.pts3dtrans[pt1*3+2];
+		var Bx = cube.pts3dtrans[pt3*3] - cube.pts3dtrans[pt1*3];
+		var By = cube.pts3dtrans[pt3*3+1] - cube.pts3dtrans[pt1*3+1];
+		var Bz = cube.pts3dtrans[pt3*3+2] - cube.pts3dtrans[pt1*3+2];
+
+		var Cx = Ay*Bz - Az*By;
+		var Cy = Az*Bx - Ax*Bz;
+		var Cz = Ax*By - Ay*Bx;
+		
+		var ax = Cx;
+		var ay = Cy;
+		var az = Cz;
+		
+		var bx = light[0];
+		var by = light[1];
+		var bz = light[2];
+		
+		var nAngle = Math.acos( (ax*bx+ay*by+az*bz) / Math.sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz)) );
+		
+		var normal = {cx:Cx, cy:Cy, cz:Cz, angle:nAngle};
+		return normal;
+	}
+	
+	function backfaceCull(cube) {
+		for (var i=0;i<cube.facesArray.length;i++) {
+			var pt1 = cube.facesArray[i][0];
+			var pt2 = cube.facesArray[i][1];
+			var pt3 = cube.facesArray[i][2];
+			var A = new Array(cube.pts2d[pt1][0], cube.pts2d[pt1][1]);
+			var B = new Array(cube.pts2d[pt2][0], cube.pts2d[pt2][1]);
+			var C = new Array(cube.pts2d[pt3][0], cube.pts2d[pt3][1]);
+			
+			var ax = B[0]-A[0];
+			var ay = B[1]-A[1];
+			var bx = B[0]-C[0];
+			var by = B[1]-C[1];
+			
+			var z = (ax*by) - (ay*bx);
+
+			if (cube.facesArray[i].length==5) {
+				if (z<0) {
+					cube.facesArray[i][4] = 1;	
+				} else {
+					cube.facesArray[i][4] = 0;
+				}
+			} else if (cube.facesArray[i].length==4) {
+				if (z<0) {
+					cube.facesArray[i][3] = 1;	
+				} else {
+					cube.facesArray[i][3] = 0;
+				}
+			}
+		}
+	}
+
+</script>
+
+<style type="text/css">
+
+	body {
+		overflow:hidden;
+		position:fixed;
+		margin:0px;
+	}
+
+	#debug {
+		position:absolute;
+		top:10px;
+		left:10px;
+		display:none;
+	}
+
+	#touchZone {
+		background-color:#F00;
+		position:absolute;
+		top:0px;
+		left:0%;
+		width:100%;
+		height:100%;
+		opacity:0;
+		z-index:100;
+	}
+
+</style>
+
+</head>
+
+<body onload="init()">
+
+<canvas id="canvas" width="100%" height="100%">
+</canvas>
+
+<audio autoplay="autoplay">
+  <source src="angelattack.mp3" type="audio/mpeg">
+  <source src="angelattack.ogg" type="audio/ogg">
+  <embed height="50" width="100" src="angelattack.mp3">
+</audio> 
+
+<div id="debug">
+	<div id="move1" onclick="makeMove()">
+		Move1
+	</div><br>
+	<div id="move2" onclick="makeMoveRev()">
+		Move2
+	</div><br>
+	<div id="divMO">
+		&nbsp;
+	</div><br>
+	<div id="coords">
+		&nbsp;
+	</div><br>
+	<div id="mouseD">
+		&nbsp;
+	</div><br>
+	<div id="disp">
+		&nbsp;
+	</div><br>
+</div>
+
+<div id="touchZone">
+</div>
+
+</body>
+</html>

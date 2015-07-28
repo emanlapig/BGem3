@@ -1,0 +1,1318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>3D</title>
+
+<script type="text/javascript" src="Cube.js"></script>
+<script type="text/javascript" src="Pet.js"></script>
+<script type="text/javascript" src="FloorGrid.js"></script>
+<script type="text/javascript" src="Octahedron.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+<script type="text/javascript">
+
+	function init() {
+		// CANVAS
+		window.pageX = 0;
+		window.pageY = 0;
+		window.centerX = window.innerWidth/2;
+		window.centerY = window.innerHeight/2;
+		window.ctx = document.getElementById("canvas").getContext("2d");
+		window.can2 = document.createElement("canvas");
+		window.ctx2 = can2.getContext("2d");
+		window.can3 = document.createElement("canvas");
+		window.ctx3 = can3.getContext("2d");
+		
+		// VIEW
+		window.focalLength = 300;
+		window.framerate = 20;
+		window.anaglyph = false;
+		window.eyeDist = 5;
+		window.eyeAngle = -1;
+		window.light = new Array(100,100,10);
+
+		// PLAYER
+		window.playerPan = 0;
+		window.playerTilt = 0;
+		window.playerX = 0;
+		window.playerX2 = 0;
+		window.playerY = 0;
+		window.playerZ = 0;
+		window.playerZ2 = 0;
+		window.speed = 10;
+		window.speedUD = 10;
+		window.speedLR = 10;
+		window.panAngle = 5;
+		window.tiltAngle = 5;
+
+		// EVENTS
+		window.kU = false;
+		window.kD = false;
+		window.kL = false;
+		window.kR = false;
+		window.kpU = false;
+		window.kpD = false;
+		window.kpL = false;
+		window.kpR = false;
+		window.mTouchPosX = 0;
+		window.mTouchPosY = 0;
+		window.tTouchPosX = 0;
+		window.tTouchPosY = 0;
+
+		// PET
+		window.attract = false;
+		window.attractPt = new Array(0,0,0);
+		window.attAng = 0;
+		window.attDist = 0;
+		window.attCounter = 10;
+		window.feeding = false;
+		window.poopd1 = false;
+		window.poopd2 = false;
+		window.poopd3 = false;
+
+		// COUNTERS
+		window.secCounter = 0;
+		window.saveCounter = 0;
+		window.hungCounter = 0;
+		window.starveCounter = 0;
+		window.feedCounter = 0;
+		window.biteCounter = 0;
+		window.restCounter = 0;
+		window.poopCounter = 0;
+		
+		if (localStorage.rset=="true" || localStorage.rset==null) {
+			localStorage.petX = 20;
+			localStorage.petY = -110;
+			localStorage.petZ = 200;
+			localStorage.petPan = 0;
+			localStorage.petpetPan = 270;
+			localStorage.playerX = 0;
+			localStorage.playerY = 0;
+			localStorage.playerZ = 0;
+			localStorage.playerPan = 0;
+			localStorage.playerTilt = 0;
+			localStorage.anaglyph = 0;
+			
+			localStorage.health = 100; //100
+			localStorage.age = 0;
+			localStorage.appetite = 2; //10
+			localStorage.waste = 0; //10
+			localStorage.thirst = 2; //10
+			localStorage.illness = 0; //10
+			localStorage.rest = 5; //10
+			localStorage.mood = 8; //10
+			localStorage.aggression = 5; //10
+			localStorage.attachment = 5; //20
+			localStorage.intelligence = 5; //20
+			localStorage.heat = 0; //10
+		}
+		
+		// 3D OBJECTS
+		window.floorGrid = new FloorGrid(201,10,1);
+		window.floorGrid2 = new FloorGrid(201,10,1);
+		window.pet1 = new Pet(50,-50,50,
+			parseFloat(localStorage.petX),
+			parseFloat(localStorage.petY),
+			parseFloat(localStorage.petZ),
+			parseFloat(localStorage.petPan),
+			parseFloat(localStorage.petpetPan),
+			parseFloat(localStorage.health),
+			parseFloat(localStorage.age),
+			parseFloat(localStorage.appetite),
+			parseFloat(localStorage.waste),
+			parseFloat(localStorage.thirst),
+			parseFloat(localStorage.illness),
+			parseFloat(localStorage.rest),
+			parseFloat(localStorage.mood),
+			parseFloat(localStorage.aggression),
+			parseFloat(localStorage.attachment),
+			parseFloat(localStorage.intelligence),
+			parseFloat(localStorage.heat),0,1,1);
+		window.food = new Cube(10,-50,10,
+								100,-100,100,
+								0,0,0,0,1);
+		window.poop1 = new Cube(20,-20,20,
+								200,-100,200,
+								0,0,0,0,1);
+		window.poop2 = new Cube(20,-20,20,
+								200,-100,200,
+								0,0,0,0,1);
+		window.cube3 = new Cube(20,-20,20,
+								200,-100,200,
+								0,0,0,0,1);
+		
+		window.objArray = new Array(floorGrid,pet1,food,poop1);
+
+		window.pts3d = new Array();
+		window.pts3dtrans = new Array();
+		window.pts2d = new Array();
+		
+		if (localStorage.rset=="hold") {
+			pet1.x3d = parseFloat(localStorage.petX);
+			pet1.y3d = parseFloat(localStorage.petY);
+			pet1.z3d = parseFloat(localStorage.petZ);
+			pet1.pan = parseFloat(localStorage.petPan);
+			pet1.petPan = parseFloat(localStorage.petpetPan);
+			playerX = parseFloat(localStorage.playerX);
+			playerY = parseFloat(localStorage.playerY);
+			playerZ = parseFloat(localStorage.playerZ);
+			playerPan = parseFloat(localStorage.playerPan);
+			playerTilt = parseFloat(localStorage.playerTilt);
+			
+			pet1.health = parseFloat(localStorage.health);
+			pet1.age = parseFloat(localStorage.age);
+			pet1.appetite = parseFloat(localStorage.appetite);
+			pet1.waste = parseFloat(localStorage.waste);
+			pet1.thirst = parseFloat(localStorage.thirst);
+			pet1.illness = parseFloat(localStorage.illness);
+			pet1.rest = parseFloat(localStorage.rest);
+			pet1.mood = parseFloat(localStorage.mood);
+			pet1.aggression = parseFloat(localStorage.aggression);
+			pet1.attachment = parseFloat(localStorage.attachment);
+			pet1.intelligence = parseFloat(localStorage.intelligence);
+			pet1.heat = parseFloat(localStorage.heat);
+
+			if (localStorage.anaglyph==0) {
+				anaglyph = false;
+			} else {
+				anaglyph = true;
+			}
+		}
+		
+		localStorage.rset="hold";
+
+		for (var i=0;i<objArray.length;i++) {
+			var thisCube = objArray[i];
+			//var copy3d = thisCube.pts3d.slice();
+			pts3d.push(new Array(thisCube.prox,thisCube.pts3d.slice()));
+			pts3dtrans.push(new Array(thisCube.prox,new Array()));
+			pts2d.push(new Array(thisCube.prox,new Array()));
+			//pts3dtransB.push(new Array(thisCube.prox,new Array()));
+			//pts2dB.push(new Array(thisCube.prox,new Array()));
+		}
+		
+		window.addEventListener('keydown',onKeyDown,true);
+		window.addEventListener('keyup',onKeyUp,true);
+		
+		document.getElementById("moveZone").addEventListener("touchstart", mTouchDown, false);
+        document.getElementById("moveZone").addEventListener("touchmove", mTouchXY, true);
+        document.getElementById("moveZone").addEventListener("touchend", mTouchUp, false);
+		document.getElementById("tiltZone").addEventListener("touchstart", tTouchDown, false);
+        document.getElementById("tiltZone").addEventListener("touchmove", tTouchXY, true);
+        document.getElementById("tiltZone").addEventListener("touchend", tTouchUp, false);
+		
+		gamePlay = setInterval("enterFrame()",1000/framerate);
+	}
+
+
+
+	//-----------------TOUCH EVENT HANDLERS------------------
+	
+	function mTouchDown(evt) {
+		mTouchPosX = evt.targetTouches[0].pageX;
+		mTouchPosY = evt.targetTouches[0].pageY;
+	}
+	
+	function mTouchXY(evt) {
+		evt.preventDefault();
+		var touchMoveX = evt.targetTouches[0].pageX;
+		var touchMoveY = evt.targetTouches[0].pageY;
+		
+		kU = true;
+		kL = true;
+		
+		speedLR = (mTouchPosX - touchMoveX)/10;
+		speedUD = (mTouchPosY - touchMoveY)/10;
+	}
+	
+	function mTouchUp(evt) {
+		kU = false;
+		kL = false;
+	}
+	
+	function tTouchDown(evt) {
+		tTouchPosX = evt.targetTouches[0].pageX;
+		tTouchPosY = evt.targetTouches[0].pageY;
+	}
+	
+	function tTouchXY(evt) {
+		evt.preventDefault();
+		var touchMoveX = evt.targetTouches[0].pageX;
+		var touchMoveY = evt.targetTouches[0].pageY;
+		
+		kpU = true;
+		kpL = true;
+		
+		panAngle = (tTouchPosX - touchMoveX)/20;
+		tiltAngle = (tTouchPosY - touchMoveY)/20;
+	}
+	
+	function tTouchUp(evt) {
+		kpU = false;
+		kpL = false;
+	}
+	
+	
+
+	//----------------KEYBOARD EVENT HANDLERS----------------
+	
+	function onKeyDown(evt) {
+		switch (evt.keyCode) {
+			case 87: // W
+				kU = true;
+				break;
+			case 83: // S
+				kD = true;
+				break;
+			case 65: // A
+				kL = true;
+				break;
+			case 68: // D
+				kR = true;
+				break;
+				
+			case 38: // up
+				kpU = true;
+				break;
+			case 40: // down
+				kpD = true;
+				break;
+			case 37: // left
+				kpL = true;
+				break;
+			case 39: // right
+				kpR = true;
+				break;
+		}
+	}
+	
+	function onKeyUp(evt) {
+		switch (evt.keyCode) {
+			case 87: // W
+				kU = false;
+				break;
+			case 83: // S
+				kD = false;
+				break;
+			case 65: // A
+				kL = false;
+				break;
+			case 68: // D
+				kR = false;
+				break;
+				
+			case 38: // up
+				kpU = false;
+				break;
+			case 40: // down
+				kpD = false;
+				break;
+			case 37: // left
+				kpL = false;
+				break;
+			case 39: // right
+				kpR = false;
+				break;
+		}
+	}
+
+
+
+	// -------------------UTILITY BELT----------------------
+
+	function secToTime(secs) {
+		var HH = Math.floor(secs/3600);
+		var MM = Math.floor((secs - HH*3600)/60);
+		var SS = (secs - HH*3600)%60;
+		var time = {hh:HH, mm:MM, ss:SS};
+		return time;
+	}
+
+	function dice() {
+		var d=Math.random()*10;
+		return d;	
+	}
+
+	function getDist(p1x,p1y,p2x,p2y) {
+		var dx = p1x-p2x;
+		var dy = p1y-p2y;
+		var dist = Math.sqrt(dx*dx+dy*dy);
+		return dist;
+	}
+
+	function getAngle(p1x,p1y,p2x,p2y) {
+		var thisAngle=0;
+		// quad I
+		if (p2x>=p1x && p2y>=p1y) {
+			thisAngle = Math.atan((p2y-p1y)/(p2x-p1x));	
+		}
+		// quad II
+		else if (p2x<=p1x && p2y>=p1y) {
+			thisAngle = 0.5*Math.PI - Math.atan((p2x-p1x)/(p2y-p1y));	
+		}
+		// quad III
+		else if (p2x<=p1x && p2y<=p1y) {
+			thisAngle = Math.PI + Math.atan((p2y-p1y)/(p2x-p1x));
+		}
+		// quad IV
+		else if (p2x>=p1x && p2y<=p1y) {
+			thisAngle = 1.5*Math.PI - Math.atan((p2x-p1x)/(p2y-p1y));
+		}
+		return thisAngle;
+	}
+
+	function vectorLength(x,y,z) {
+		var len = Math.sqrt(x*x+y*y+z*z);
+		return len;
+	}
+
+	function getRandomColor() {
+		var letters = '0123456789ABCDEF'.split('');
+		var color = '#';
+		for (var i=0;i<6;i++) {
+			color+=letters[Math.round(Math.random()*15)];
+		}
+		return color;
+	}
+
+
+
+	//-------------------ENTER FRAME HANDLER-------------------
+	
+	function enterFrame() {
+		canvas.width=window.innerWidth;
+		canvas.height=window.innerHeight;
+		can2.width=window.innerWidth;
+		can2.height=window.innerHeight;
+		can3.width=window.innerWidth;
+		can3.height=window.innerHeight;
+
+		// PLAYER MOVEMENT
+		if (kU) {
+			playerZ-=Math.cos(playerPan*Math.PI/180)*speedUD;
+			playerX-=Math.sin(playerPan*Math.PI/180)*speedUD;
+		}
+		if (kD) {
+			playerZ+=Math.cos(playerPan*Math.PI/180)*speed;
+			playerX+=Math.sin(playerPan*Math.PI/180)*speed;
+		}
+		if (kR) {
+			playerX-=Math.cos(playerPan*Math.PI/180)*speed;
+			playerZ+=Math.sin(playerPan*Math.PI/180)*speed;
+		}
+		if (kL) {
+			playerX+=Math.cos(playerPan*Math.PI/180)*speedLR;
+			playerZ-=Math.sin(playerPan*Math.PI/180)*speedLR;
+		}
+
+		if (kpU) {
+			playerTilt-=tiltAngle;
+		}
+		if (kpD) {
+			playerTilt+=tiltAngle;
+		}
+		if (kpL) {
+			playerPan-=panAngle;
+		}
+		if (kpR) {
+			playerPan+=panAngle;	
+		}
+		
+
+		// PET MOVEMENT
+		checkPos(pet1);
+		checkCommands(pet1);
+		
+		pet1.z3d-=Math.cos(pet1.pan*Math.PI/180)*pet1.speedZ;
+		pet1.x3d-=Math.sin(pet1.pan*Math.PI/180)*pet1.speedZ;
+		
+		pet1.y3d-=pet1.speedY;
+		if (pet1.y3d>=-100 || pet1.y3d<=-300) {
+			pet1.y3d+=pet1.speedY;
+		}
+		
+		pet1.pan-=pet1.panAngle;
+		pet1.petPan+=pet1.panAngle;
+		
+		if (pet1.pan>=360) {
+			pet1.pan-=360;
+		}
+		if (pet1.pan<=-360) {
+			pet1.pan+=360;
+		}
+		
+		if (pet1.petPan>=360) {
+			pet1.petPan-=360;
+		}
+		if (pet1.petPan<=-360) {
+			pet1.petPan+=360;
+		}
+
+		secCounter+=1;
+		if (secCounter==framerate) {
+			pet1.age+=1;
+			secCounter=0;
+		}
+
+		var petAge = secToTime(pet1.age);
+
+		life(pet1);
+		
+		if (petAge.hh<10) {
+			document.getElementById("HH").innerHTML="0"+petAge.hh;
+		} else {
+			document.getElementById("HH").innerHTML=petAge.hh;
+		}
+		if (petAge.mm<10) {
+			document.getElementById("MM").innerHTML="0"+petAge.mm;
+		} else {
+			document.getElementById("MM").innerHTML=petAge.mm;
+		}
+		if (petAge.ss<10) {
+			document.getElementById("SS").innerHTML="0"+petAge.ss;
+		} else {
+			document.getElementById("SS").innerHTML=petAge.ss;
+		}
+		
+
+		// OBJECT SORTING/3D DRAWING
+		ctx2.clearRect(0,0,canvas.width,canvas.height);
+		ctx3.clearRect(0,0,canvas.width,canvas.height);
+		//ctx4.clearRect(0,0,canvas.width,canvas.height);
+		if (!anaglyph) {
+			ctx.fillStyle="#FFFFFF";
+			ctx.fillRect(0,0,canvas.width,canvas.height);
+		} else {
+			ctx2.fillStyle="rgba(255,0,0,1)";
+			ctx2.fillRect(0,0,canvas.width,canvas.height);
+			ctx3.fillStyle="rgba(0,255,255,1)";
+			ctx3.fillRect(0,0,canvas.width,canvas.height);
+		}
+
+		if (!attract) {
+			food.visible=0;
+		}
+		
+		objArray.sort(function(a,b){return b.prox-a.prox;});
+		pts3d.sort(function(a,b){return b[0]-a[0];});
+		pts3dtrans.sort(function(a,b){return b[0]-a[0];});
+		pts2d.sort(function(a,b){return b[0]-a[0];});
+
+		if (!anaglyph) {
+			for (var i=0;i<objArray.length;i++) {
+				makeTrans(objArray[i],i);
+				for (var j=0;j<objArray.length;j++) {
+					var thisObj = objArray[j];
+					var thisProx = vectorLength((playerX-thisObj.x3d),(playerY-thisObj.y3d),(playerZ-thisObj.z3d));
+					objArray[j].prox = thisProx;
+					pts3d[j][0] = thisProx;
+					pts3dtrans[j][0] = thisProx;
+					pts2d[j][0] = thisProx;
+				}
+				moveObj(objArray[i],i);
+				translate(objArray[i],i);
+				project3d(objArray[i],i);
+				checkVis(objArray[i],i);
+				draw2d(objArray[i],i,1);
+			}
+		} else {
+			for (var k=0;k<objArray.length;k++) {
+
+				// MAKE TRANS
+
+				// SPLIT 3D ARRAYS
+				playerX2 = playerX;
+				playerZ2 = playerZ;
+				playerX+=Math.cos(playerPan*Math.PI/180)*eyeDist;
+				playerZ-=Math.sin(playerPan*Math.PI/180)*eyeDist;
+				playerPan-=eyeAngle;
+
+				makeTrans(objArray[k],k);
+				moveObj(objArray[k],k);
+				translate(objArray[k],k);
+				project3d(objArray[k],k);
+				checkVis(objArray[k],k);
+				draw2d(objArray[k],k,1);
+
+				playerX = playerX2;
+				playerZ = playerZ2;
+				playerPan+=eyeAngle;
+				
+				playerX2 = playerX;
+				playerZ2 = playerZ;
+
+				playerX-=Math.cos(playerPan*Math.PI/180)*eyeDist;
+				playerZ+=Math.sin(playerPan*Math.PI/180)*eyeDist;
+				playerPan+=eyeAngle;
+
+				makeTrans(objArray[k],k);
+				moveObj(objArray[k],k);
+				translate(objArray[k],k);
+				project3d(objArray[k],k);
+				checkVis(objArray[k],k);
+				draw2d(objArray[k],k,2);
+
+				playerX = playerX2;
+				playerZ = playerZ2;
+				playerPan-=eyeAngle;
+
+			}
+		}
+		
+		if (!anaglyph) {
+			ctx.drawImage(can2,0,0);
+		} else {
+			ctx.globalCompositeOperation = "lighter";
+			ctx.drawImage(can2,0,0);
+			ctx.drawImage(can3,0,0);
+		}
+		
+
+		// STATUS PANEL
+		document.getElementById("health").innerHTML="Health: "+pet1.health;
+		document.getElementById("appetite").innerHTML="Appetite: "+pet1.appetite;
+		document.getElementById("waste").innerHTML="Waste: "+pet1.waste;
+		document.getElementById("illness").innerHTML="Illness: "+pet1.illness;
+		document.getElementById("rest").innerHTML="Rest: "+pet1.rest;
+		document.getElementById("mood").innerHTML="Mood: "+pet1.mood;
+		document.getElementById("petPos").innerHTML="x:"+Math.floor(pet1.x3d)+", y:"+Math.floor(pet1.y3d)+", z:"+Math.floor(pet1.z3d)+", pan:"+Math.floor(pet1.pan);
+		//document.getElementById("debug").innerHTML=cube1.pts3dtrans[8][2];
+		
+
+		// GAME SAVE
+		saveCounter+=1;
+		if (saveCounter==10) {
+			localStorage.petX=pet1.x3d;
+			localStorage.petY=pet1.y3d;
+			localStorage.petZ=pet1.z3d;
+			localStorage.petPan=pet1.pan;
+			localStorage.petpetPan=pet1.petPan;
+			localStorage.playerX=playerX;
+			localStorage.playerY=playerY;
+			localStorage.playerZ=playerZ;
+			localStorage.playerPan=playerPan;
+			localStorage.playerTilt=playerTilt;
+			
+			localStorage.health=pet1.health;
+			localStorage.age=pet1.age;
+			localStorage.appetite=pet1.appetite;
+			localStorage.waste=pet1.waste;
+			localStorage.thirst=pet1.thirst;
+			localStorage.illness=pet1.illness;
+			localStorage.rest=pet1.rest;
+			localStorage.mood=pet1.mood;
+			localStorage.aggression=pet1.aggression;
+			localStorage.attachment=pet1.attachment;
+			localStorage.intelligence=pet1.intelligence;
+			localStorage.heat=pet1.heat;
+				
+			saveCounter=0;
+		}
+	}
+
+
+
+
+	//------------------PET COMMANDS/AI--------------------
+
+	function newPetCommand(cube) {
+		if (attract) {
+			
+			var rotObj = {speedZ:0, speedY:0, speedX:0, panAngle:attAng/10, duration:10};
+			var moveObj = {speedZ:dice(), speedY:dice(), speedX:0, panAngle:0, duration:Math.floor(dice())};
+			var stopObj = {speedZ:0, speedY:0, speedX:0, panAngle:0, duration:5};
+			
+			if (dice()<5) {
+				moveObj.speedY *= -1;
+			}
+			
+			if (attCounter<10) {
+				if (dice()<5 || attDist<=200) {
+					cube.petCommands.push(stopObj);
+					if (attDist<=200 && !feeding) {
+						feeding=true;
+					}
+				} else {
+					cube.petCommands.push(moveObj);	
+				}
+				attCounter+=1;
+			} else if (attCounter==10) {
+				cube.petCommands.push(rotObj);
+				attCounter=0;
+			}
+			
+		} else {
+
+			if (dice()<5) {
+				if (dice()<5) {
+					var petObj = {speedZ:dice(), speedY:dice(), speedX:0, panAngle:0, duration:Math.floor(dice())};
+				} else {
+					var petObj = {speedZ:0, speedY:0, speedX:0, panAngle:dice(), duration:Math.floor(dice())};
+				}
+			} else {
+				var petObj = {speedZ:0, speedY:0, speedX:0, panAngle:0, duration:Math.floor(dice()*5)};
+			}
+			
+			if (petObj.duration<=5) {
+				petObj.duration+=5;
+			}
+			
+			if (petObj.speedY>5) {
+				petObj.speedY-=5;
+			}
+			
+			if (dice()<5) {
+				petObj.speedY*=-1;
+			}
+			if (dice()<5) {
+				petObj.panAngle*=-1;
+			}
+			
+			cube.petCommands.push(petObj);
+		}
+			
+		for (var i=0;i<5;i++) {
+			document.getElementById("command"+i).innerHTML = "speedZ:"+Math.floor(cube.petCommands[i].speedZ)+" panAngle:"+Math.floor(cube.petCommands[i].panAngle*100)/100+" time:"+cube.petCommands[i].duration;
+		}
+	}
+	
+	function checkCommands(cube) {
+		if (cube.petCommands[0].duration==0) {
+			cube.petCommands.shift();
+			newPetCommand(cube);
+		}
+		
+		if (cube.petCommands[0].duration>0) {
+			cube.petCommands[0].duration-=1;
+			if (cube.petCommands[0].duration<5) {
+				cube.petCommands[0].speedZ*=0.8;
+				cube.petCommands[0].speedY*=0.8;
+				cube.petCommands[0].speedX*=0.8;
+			}
+		}
+		
+		cube.speedZ = cube.petCommands[0].speedZ;
+		cube.speedY = cube.petCommands[0].speedY;
+		cube.speedX = cube.petCommands[0].speedX;
+		cube.panAngle = cube.petCommands[0].panAngle;
+	}
+
+	function checkPos(cube) {
+		attDist=Math.abs(getDist(cube.x3d,cube.z3d,attractPt[0],attractPt[2]));
+		var dX=Math.abs(cube.x3d-attractPt[0]);
+		var dZ=Math.abs(cube.z3d-attractPt[2]);
+		var angle=0;
+
+		// quad I
+		if (attractPt[0]>=cube.x3d && attractPt[2]>=cube.z3d) {
+			angle = Math.atan(dZ/dX);
+		}
+		// quad II
+		else if (attractPt[0]<=cube.x3d && attractPt[2]>=cube.z3d) {
+			angle = .5*Math.PI+Math.atan(dX/dZ);
+		}
+		// quad III
+		else if (attractPt[0]<=cube.x3d && attractPt[2]<=cube.z3d) {
+			angle = Math.PI+Math.atan(dZ/dX);
+		}
+		// quad IV
+		else if (attractPt[0]>=cube.x3d && attractPt[2]<=cube.z3d) {
+			angle = 1.5*Math.PI+Math.atan(dX/dZ);
+		}
+		
+		var thisPan = cube.petPan;
+		
+		attAng = (thisPan*Math.PI/180)-angle;
+		attAng*=-180/Math.PI;
+		
+		if (attAng>180) {
+			attAng-=360;
+		}
+		if (attAng<-180) {
+			attAng+=360;
+		}
+		
+		if (attAng==0) {
+			for (var i=0;i<cube.petCommands.length;i++) {
+				cube.petCommands[i].duration = 0;	
+			}
+		}
+	}
+
+
+
+	//------------------------LIFE---------------------------
+
+	function life(pet) {
+		hungCounter+=1;
+		if (hungCounter==framerate*30) {
+			if (pet.appetite<10) {
+				pet.appetite+=1;
+			}
+			hungCounter=0;
+		}
+
+		if (pet.appetite==10) {
+			starveCounter+=1;
+			if (starveCounter==framerate*30) {
+				pet.health-=1;
+				starveCounter=0;
+			}
+		}
+
+		restCounter+=1;
+		if (restCounter==framerate*60) {
+			if (pet.rest>0) {
+				pet.rest-=1;
+			}
+			restCounter=0;
+		}
+
+		if (feeding) {
+			feedCounter+=1;
+			if (feedCounter%framerate*5==0) {
+				for (var i=0;i<4;i++) {
+					food.pts3d[i][1]+=20;
+				}
+				biteCounter+=1;
+			}
+			if (biteCounter==5) {
+				for (var i=0;i<4;i++) {
+					food.pts3d[i][1]-=100;
+				}
+				food.visible=0;
+				pet.appetite-=1;
+				feeding=false;
+				attract=false;
+				feedCounter=0;
+				biteCounter=0;
+			}
+		}
+
+		poopCounter+=1;
+	}
+
+
+
+	//------------------3D TRANSLATION/DRAWING------------------
+	
+	function makeTrans(cube,cubeInd) {
+		var thisCube = pts3dtrans[cubeInd][1];
+		thisCube.length=0;
+		for (var i=0;i<pts3d[cubeInd][1].length;i++) {
+			thisPt = pts3d[cubeInd][1][i];
+			thisCube[i*3] = thisPt[0];
+			thisCube[i*3+1] = thisPt[1];
+			thisCube[i*3+2] = thisPt[2];
+		}
+	}
+
+	function moveObj(cube,cubeInd) {
+		var thisCube = pts3dtrans[cubeInd][1];
+		// ROTATE
+		for (var j=0;j<thisCube.length/3;j++) {
+			var thisPt = thisCube[j*3];
+			var thisPt2 = thisCube[j*3+2];
+			var thisAngle = getAngle(0,0,thisPt,thisPt2);
+			var newAngle = thisAngle - (cube.pan*Math.PI/180);
+			
+			if (newAngle>2*Math.PI) {
+				newAngle-=2*Math.PI;
+			}
+			
+			var r = getDist(0,0,thisPt,thisPt2);
+			thisCube[j*3] = Math.cos(newAngle) * r;
+			thisCube[j*3+2] = Math.sin(newAngle) * r;
+		}
+
+		// TRANSLATE
+		for (var i=0;i<thisCube.length/3;i++) {
+			thisCube[i*3]+=cube.x3d;
+			thisCube[i*3+1]+=cube.y3d;
+			thisCube[i*3+2]+=cube.z3d;
+			
+			if (cube!==floorGrid) {
+				if (i>=thisCube.length/3-4) {
+					thisCube[i*3+1]-=cube.y3d;
+				}
+			}
+		}
+	}
+
+	function translate(cube,cubeInd) {
+		var thisCube = pts3dtrans[cubeInd][1];
+		for (var i=0;i<thisCube.length/3;i++) {
+			thisCube[i*3] += playerX;
+			thisCube[i*3+1] += playerY + 80;
+			thisCube[i*3+2] += playerZ;
+		}
+
+		// PAN
+		for (var j=0;j<thisCube.length/3;j++) {
+			var thisPt = thisCube[j*3];
+			var thisPt2 = thisCube[j*3+2];
+			if (thisPt==0) {
+				thisPt+=1;	
+			}
+			if (thisPt2==0) {
+				thisPt2+=1;	
+			}
+			var thisAngle = getAngle(0,0,thisPt,thisPt2);
+			var newAngle = thisAngle + (playerPan*Math.PI/180);
+			
+			if (newAngle>2*Math.PI) {
+				newAngle-=2*Math.PI;
+			}
+			
+			var r = getDist(0,0,thisPt,thisPt2);
+			thisCube[j*3] = Math.cos(newAngle) * r;
+			thisCube[j*3+2] = Math.sin(newAngle) * r;
+		}
+
+		// TILT
+		for (var k=0;k<thisCube.length/3;k++) {
+			var thisPt = thisCube[k*3+1];
+			var thisPt2 = thisCube[k*3+2];
+			if (thisPt==0) {
+				thisPt-=1;	
+			}
+			if (thisPt2==0) {
+				thisPt2-=1;	
+			}
+			var thisAngle = getAngle(0,0,thisPt,thisPt2);
+			var newAngle = thisAngle + (playerTilt*Math.PI/180);
+			
+			if (newAngle>2*Math.PI) {
+				newAngle-=2*Math.PI;
+			}
+			
+			var r = getDist(0,0,thisPt,thisPt2);
+			thisCube[k*3+1] = Math.cos(newAngle) * r;
+			thisCube[k*3+2] = Math.sin(newAngle) * r;
+		}
+	}
+
+	function project3d(cube,cubeInd) {
+		var thisCube = pts3dtrans[cubeInd][1];
+		var this2dCube = pts2d[cubeInd][1];
+		centerX = canvas.width/2;
+		centerY = canvas.height/2;
+		for (var i=0;i<thisCube.length/3;i++) {
+			var scaleRatio = focalLength/thisCube[i*3+2];
+			if (thisCube[i*3+2]<0) {
+				
+				var pt1x = thisCube[i*3]+.1;
+				var pt2x = thisCube[i*3]+.1;
+				var pt3x = thisCube[i*3]+.1;
+				var pt1y = thisCube[i*3+1]+.1;
+				var pt2y = thisCube[i*3+1]+.1;
+				var pt3y = thisCube[i*3+1]+.1;
+				var pt1_2dx = pt1x * (focalLength/5) + centerX;
+				var pt1_2dy = pt1y * (focalLength/5) + centerY;
+				var pt2_2dx = pt2x * (focalLength/4) + centerX;
+				var pt2_2dy = pt2y * (focalLength/4) + centerY;
+				var pt3_2dx = pt3x * (focalLength/3) + centerX;
+				var pt3_2dy = pt3y * (focalLength/3) + centerY;
+				
+				var angle = getAngle(pt1_2dx,pt1_2dy,pt2_2dx,pt2_2dy);
+				
+				var dist1 = getDist(pt1_2dx,pt1_2dy,pt2_2dx,pt2_2dy);
+				var dist2 = getDist(pt1_2dx,pt1_2dy,pt3_2dx,pt3_2dy);
+				
+				var convF = dist2/dist1;
+				
+				this2dCube[i*2] = (Math.cos(angle) * dist1 * convF * -(thisCube[i*3+2]-2)) + pt3_2dx;
+				this2dCube[i*2+1] = (Math.sin(angle) * dist1 * convF * -(thisCube[i*3+2]-2)) + pt3_2dy;
+			} else {
+				this2dCube[i*2] = thisCube[i*3] * scaleRatio + centerX;
+				this2dCube[i*2+1] = thisCube[i*3+1] * scaleRatio + centerY;
+			}
+		}
+	}
+
+	function checkVis(cube,cubeInd) {
+		var thisCube = pts3dtrans[cubeInd][1];
+		var vis=0;
+		
+		if (cube===floorGrid || cube===floorGrid2) {
+			for (j=0;j<cube.facesArray.length;j++) {
+				var pt1 = cube.facesArray[j][0];
+				var pt2 = cube.facesArray[j][1];
+				var pt3 = cube.facesArray[j][2];
+				var pt4 = cube.facesArray[j][3];
+				if (thisCube[pt1*3+2]>0 || thisCube[pt2*3+2]>0 || thisCube[pt3*3+2]>0 || thisCube[pt4*3+2]>0) {
+					cube.facesArray[j][4]=1;
+				} else {
+					cube.facesArray[j][4]=0;
+				}
+			}
+		} else {
+			if (cube!==food && cube!==poop1) {
+				for (var i=0;i<thisCube.length/3;i++) {
+					if (thisCube[i*3+2]>0) {
+						vis=1;
+					}
+				}
+				cube.visible = vis;
+			}
+		}
+	}
+
+	function draw2d(cube,cubeInd,eye) {
+
+		var thisCube = pts3dtrans[cubeInd][1];
+		var this2dCube = pts2d[cubeInd][1];
+
+		if (cube.visible==1) {
+			
+			if (cube!==floorGrid) {
+				backfaceCull(cube,cubeInd);
+			}
+			
+			for (var i=0;i<cube.facesArray.length;i++) {
+				var normal = getNormal(cube,cubeInd,cube.facesArray[i]);
+				var nAngle = normal.angle;
+				var shadow = 1-nAngle/Math.PI*.80;
+				var shine = nAngle/Math.PI/3;
+
+				if (cube.facesArray[i][4]==1) {
+					var f1 = cube.facesArray[i][0];
+					var f2 = cube.facesArray[i][1];
+					var f3 = cube.facesArray[i][2];
+					var f4 = cube.facesArray[i][3];
+
+					var pt1x = this2dCube[f1*2];
+					var pt1y = this2dCube[f1*2+1];
+					var pt2x = this2dCube[f2*2];
+					var pt2y = this2dCube[f2*2+1];
+					var pt3x = this2dCube[f3*2];
+					var pt3y = this2dCube[f3*2+1];
+					var pt4x = this2dCube[f4*2];
+					var pt4y = this2dCube[f4*2+1];
+
+					var R = cube.facesArray[i][5];
+					var G = cube.facesArray[i][6];
+					var B = cube.facesArray[i][7];
+
+					//PURPLE
+					var newR = Math.floor(R*(shadow-shine));
+					var newG = Math.floor(G*(shadow-shine));
+					var newB = Math.floor(B*(shadow-shine));
+
+					if (!anaglyph) {
+						ctx2.beginPath();
+						ctx2.moveTo(pt1x,pt1y);
+						ctx2.lineTo(pt2x,pt2y);
+						ctx2.lineTo(pt3x,pt3y);
+						ctx2.lineTo(pt4x,pt4y);
+						ctx2.lineTo(pt1x,pt1y);
+						ctx2.closePath();
+						ctx2.strokeStyle="rgba("+newR+","+newG+","+newB+",1)";
+						ctx2.stroke();
+						ctx2.fillStyle="rgba("+newR+","+newG+","+newB+",1)";
+						ctx2.fill();
+					} else {
+						if (eye==1) {
+							ctx2.beginPath();
+							ctx2.moveTo(pt1x,pt1y);
+							ctx2.lineTo(pt2x,pt2y);
+							ctx2.lineTo(pt3x,pt3y);
+							ctx2.lineTo(pt4x,pt4y);
+							ctx2.lineTo(pt1x,pt1y);
+							ctx2.closePath();
+							ctx2.strokeStyle="rgba("+newR+",0,0,1)";
+							ctx2.stroke();
+							ctx2.fillStyle="rgba("+newR+",0,0,1)";
+							ctx2.fill();
+						} else {
+							ctx3.beginPath();
+							ctx3.moveTo(pt1x,pt1y);
+							ctx3.lineTo(pt2x,pt2y);
+							ctx3.lineTo(pt3x,pt3y);
+							ctx3.lineTo(pt4x,pt4y);
+							ctx3.lineTo(pt1x,pt1y);
+							ctx3.closePath();
+							ctx3.strokeStyle="rgba(0,"+newG+","+newB+",1)";
+							ctx3.stroke();
+							ctx3.fillStyle="rgba(0,"+newG+","+newB+",1)";
+							ctx3.fill();
+						}
+
+					}
+
+					/*if (cube===food) {
+						ctx2.strokeStyle="orange";
+						ctx2.fillStyle = "orange";
+						ctx2.closePath();
+						ctx2.stroke();
+						ctx2.fill();
+					}
+					if (cube===poop1) {
+						ctx2.strokeStyle=getRandomColor();
+						ctx2.fillStyle = getRAndomColor();
+						ctx2.closePath();
+						ctx2.stroke();
+						ctx2.fill();
+					}*/
+					
+					//var shadow = nAngle/Math.PI;
+					
+					/*ctx2.beginPath();
+					ctx2.moveTo(pt1x,pt1y);
+					ctx2.lineTo(pt2x,pt2y);
+					ctx2.lineTo(pt3x,pt3y);
+					ctx2.lineTo(pt4x,pt4y);
+					ctx2.lineTo(pt1x,pt1y);
+					ctx2.strokeStyle="rgba(0,0,0,"+shadow+")";
+					ctx2.fillStyle="rgba(0,0,0,"+shadow+")";
+					ctx2.closePath();
+					ctx2.stroke();
+					ctx2.fill();
+					
+					var shine = 1-nAngle/Math.PI*3;
+					
+					ctx2.beginPath();
+					ctx2.moveTo(pt1x,pt1y);
+					ctx2.lineTo(pt2x,pt2y);
+					ctx2.lineTo(pt3x,pt3y);
+					ctx2.lineTo(pt4x,pt4y);
+					ctx2.lineTo(pt1x,pt1y);
+					ctx2.strokeStyle="rgba(255,255,255,"+shine+")";
+					ctx2.fillStyle="rgba(255,255,255,"+shine+")";
+					ctx2.closePath();
+					ctx2.stroke();
+					ctx2.fill();*/
+					
+				}
+			}
+			
+			if (cube!==floorGrid) {
+				
+				if (cube===pet1) {
+					ctx2.beginPath();
+					ctx2.strokeStyle="#000000";
+					ctx2.lineWidth=2;
+					ctx2.lineJoin='bevel';
+					
+					// EYES
+					ctx2.moveTo(this2dCube[8][0],this2dCube[8][1]);
+					ctx2.lineTo(this2dCube[9][0],this2dCube[9][1]);
+					
+					ctx2.moveTo(this2dCube[10][0],this2dCube[10][1]);
+					ctx2.lineTo(this2dCube[11][0],this2dCube[11][1]);
+					
+					ctx2.stroke();
+					ctx2.closePath();
+				}
+				
+				
+				ctx2.beginPath();
+				ctx2.strokeStyle="#000000";
+				ctx2.lineWidth=2;
+				ctx2.lineJoin='bevel';
+				
+				// SHADOW
+				ctx2.moveTo(this2dCube[12][0],this2dCube[12][1]);
+				ctx2.lineTo(this2dCube[13][0],this2dCube[13][1]);
+				ctx2.lineTo(this2dCube[14][0],this2dCube[14][1]);
+				ctx2.lineTo(this2dCube[15][0],this2dCube[15][1]);
+				ctx2.lineTo(this2dCube[12][0],this2dCube[12][1]);
+				ctx2.fillStyle="#000000";
+				ctx2.fill();
+				
+				ctx2.stroke();
+				ctx2.closePath();
+			}
+		}
+	}
+	
+	function getNormal(cube,cubeInd,face) {
+		var thisCube = pts3dtrans[cubeInd][1];
+		var pt1 = face[0];
+		var pt2 = face[1];
+		var pt3 = face[3];
+		
+		var Ax = thisCube[pt2*3] - thisCube[pt1*3];
+		var Ay = thisCube[pt2*3+1] - thisCube[pt1*3+1];
+		var Az = thisCube[pt2*3+2] - thisCube[pt1*3+2];
+		var Bx = thisCube[pt3*3] - thisCube[pt1*3];
+		var By = thisCube[pt3*3+1] - thisCube[pt1*3+1];
+		var Bz = thisCube[pt3*3+2] - thisCube[pt1*3+2];
+
+		var Cx = Ay*Bz - Az*By;
+		var Cy = Az*Bx - Ax*Bz;
+		var Cz = Ax*By - Ay*Bx;
+		
+		var ax = Cx;
+		var ay = Cy;
+		var az = Cz;
+		
+		var bx = light[0];
+		var by = light[1];
+		var bz = light[2];
+		
+		var nAngle = Math.acos( (ax*bx+ay*by+az*bz) / Math.sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz)) );
+		
+		var normal = {cx:Cx, cy:Cy, cz:Cz, angle:nAngle};
+		return normal;
+	}
+	
+	function backfaceCull(cube,cubeInd) {
+		var this2dCube = pts2d[cubeInd][1];
+		for (var i=0;i<cube.facesArray.length;i++) {
+			var pt1 = cube.facesArray[i][0];
+			var pt2 = cube.facesArray[i][1];
+			var pt3 = cube.facesArray[i][2];
+			var A = new Array(this2dCube[pt1*2], this2dCube[pt1*2+1]);
+			var B = new Array(this2dCube[pt2*2], this2dCube[pt2*2+1]);
+			var C = new Array(this2dCube[pt3*2], this2dCube[pt3*2+1]);
+			
+			var ax = B[0]-A[0];
+			var ay = B[1]-A[1];
+			var bx = B[0]-C[0];
+			var by = B[1]-C[1];
+			
+			var z = (ax*by) - (ay*bx);
+			if (z<0) {
+				cube.facesArray[i][4] = 1;	
+			} else {
+				cube.facesArray[i][4] = 0;
+			}
+		}
+	}
+
+
+
+	// --------------------BUTTONS---------------------
+
+	function feedBut() {
+		food.x3d = -playerX - Math.cos((360-playerPan-90)*Math.PI/180)*100;
+		food.z3d = -playerZ - Math.sin((360-playerPan-90)*Math.PI/180)*100;
+		food.visible = 1;
+
+		attract=true;
+		attractPt = new Array(food.x3d,food.y3d,food.z3d);
+	}
+	
+	function clearStorage() {
+		localStorage.length = 0;
+		localStorage.rset="true";
+		location.reload();
+	}
+
+	function toggle3d() {
+		if (!anaglyph) {
+			localStorage.anaglyph = 1;
+		} else {
+			localStorage.anaglyph = 0;
+		}
+		location.reload();
+	}
+
+</script>
+
+
+
+<style type="text/css">
+	body {
+		overflow:hidden;
+		position:fixed;
+	}
+		
+	div, span {
+		font-family:Verdana, Geneva, sans-serif;
+		font-size:14px;
+	}
+	
+	#commands {
+		position:absolute;
+		top:10px;
+		left:10px;
+		font-size:20px;
+	}
+	
+	#status {
+		position:absolute;
+		top:10px;
+		right:20px;
+		font-size:20px;
+	}
+	
+	#moveZone {
+		background-color:#00F;
+		position:absolute;
+		top:0px;
+		left:0px;
+		width:50%;
+		height:100%;
+		opacity:0;
+	}
+	
+	#tiltZone {
+		background-color:#F00;
+		position:absolute;
+		top:0px;
+		left:50%;
+		width:50%;
+		height:100%;
+		opacity:0;
+	}
+
+	#feedbutt {
+		position:absolute;
+		z-index:100;	
+	}
+
+	#storbutt {
+		position:absolute;
+		z-index:100;	
+	}
+
+	#butt3d {
+		position:absolute;
+		z-index:100;	
+	}
+</style>
+
+</head>
+
+
+
+<body onload="init()">
+
+<canvas id="canvas" width="100%" height="100%">
+</canvas>
+
+<div id="commands">
+	Commands
+    <div id="command0"></div><br />
+    <div id="command1"></div><br />
+    <div id="command2"></div><br />
+    <div id="command3"></div><br />
+    <div id="command4"></div><br />
+    <div id="petPos"></div><br />
+    <button type="button" onclick="feedBut()" id="feedbutt">Feed</button><br /><br />
+    <button type="button" onclick="clearStorage()" id="storbutt">Reset</button><br /><br />
+    <button type="button" onclick="toggle3d()" id="butt3d">Anaglyph</button>
+</div>
+
+<div id="status">
+	Status
+    <div id="time">Age: <span id="HH"></span>:<span id="MM"></span>:<span id="SS"></div>
+    <div id="health"></div>
+    <div id="appetite"></div>
+    <div id="waste"></div>
+    <div id="illness"></div>
+    <div id="rest"></div>
+    <div id="mood"></div>
+    <div id="debug"></div>
+</div>
+
+<div id="tiltZone">
+</div>
+<div id="moveZone">
+</div>
+
+</body>
+</html>
