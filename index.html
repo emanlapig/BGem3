@@ -20,6 +20,7 @@
 			camera,
 			renderer,
 			controller,
+            cameraController,
 			canvas,
 			ctx,
 			clickArea;
@@ -110,6 +111,7 @@
 			// user control
 			clickArea = document.getElementById("click-area");
 			controller = new BGem3.Controller({div:clickArea});
+            cameraController = new BGem3.CameraController();
 		}
 		// ---------------- END ON PAGE LOAD ----------------
 

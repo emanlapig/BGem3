@@ -12,6 +12,7 @@
 
     BGem3.Camera = function() {
         this.position = {x:0,y:0,z:0};
+        this.rotation = {x:0,y:0,z:0};
         this.focalLength = focalLength;
     };
 
@@ -34,7 +35,6 @@
     BGem3.Mesh = function() {
         this.vertices = [];
         this.faces = [];
-        this.transform = [];
         this.makeTransform = function() {
             this.transform = JSON.parse(JSON.stringify(this.vertices));
         };
@@ -58,7 +58,6 @@
             {x:-this.size, y:-this.size, z:this.size},
             {x:-this.size, y:this.size, z:this.size},
             {x:this.size, y:this.size, z:this.size}
-
         ];
         this.faces = [
             [1,2,3,4,[102,45,145,1],true,texture,true],  // front
@@ -101,130 +100,165 @@
                 scene.objs[i].transform = [];
                 scene.objs[i].vertices2 = [];
                 for (var l=0;l<scene.objs[i].mesh.vertices.length;l++) {
-                    var obj = JSON.parse(JSON.stringify(scene.objs[i].mesh.transform[l]));
+                    var obj = JSON.parse(JSON.stringify(scene.objs[i].mesh.vertices[l]));
                     scene.objs[i].transform.push(obj);
-                }
-                scene.objs[i].mesh.transform = [];
-                for (var m=0;m<scene.objs[i].mesh.vertices.length;m++) {
-                    var obj = JSON.parse(JSON.stringify(scene.objs[i].transform[m]));
-                    scene.objs[i].mesh.transform.push(obj);
                 }
             }
             scene.action();
-            renderer.rotate('local',renderer.translate); // begin callback chain
+            renderer.moveCam(renderer.rotate); // begin callback chain
             renderer.trackFPS += 1;
         };
         /*  RENDER PIPELINE:
-            1. rotate local
-            2. translate local
-            3. rotate global
-            4. translate global
-            5. project 3d to 2d
-            6. z-sort objects
-            7. draw to canvas
-            8. update stats
-            9. post-action
+            1. interpret camera
+            2. rotate local
+            3. translate local
+            4. rotate global
+            5. translate global
+            6. rotate camera
+            7. translate camera
+            8. project 3d to 2d
+            9. z-sort objects
+            10. draw to canvas
+            11. update stats
+            12. post-action
         */
+        this.moveCam = function(cb) {
+            if (cameraController.w) {
+                camera.position.z+=1;
+            }
+            if (cameraController.a) {
+                camera.position.x-=1;
+            }
+            if (cameraController.s) {
+                camera.position.z-=1;
+            }
+            if (cameraController.d) {
+                camera.position.x+=1;
+            }
+            if (cameraController.u) {
+                camera.rotation.x+=1;
+            }
+            if (cameraController.o) {
+                camera.rotation.x-=1;
+            }
+            if (cameraController.l) {
+                camera.rotation.y+=1;
+            }
+            if (cameraController.r) {
+                camera.rotation.y-=1;
+            }
+            cb('local',renderer.translate);
+        };
         this.rotate = function(lg,cb) {
             for (var i=0;i<scene.objs.length;i++) {
                 // X AXIS
                 for (var k=0;k<scene.objs[i].transform.length;k++) {
                     var vy = scene.objs[i].transform[k].y,
                         vz = scene.objs[i].transform[k].z,
-                        angle = BGem3.Math.getAngle(0,0,vy,vz),
-                        angle2 = lg=='local' ? 
-                            angle - (scene.objs[i].lRotation.x * Math.PI/180):
-                            angle - (scene.objs[i].gRotation.x * Math.PI/180);
+                        angle = BGem3.Math.getAngle(0,0,vy,vz);
+                    switch (lg) {
+                        case 'local':
+                            angle2 = angle - (scene.objs[i].lRotation.x * Math.PI/180);
+                            break;
+                        case 'global':
+                            angle2 = angle - (scene.objs[i].gRotation.x * Math.PI/180);
+                            break;
+                        case 'camera':
+                            angle2 = angle - (camera.rotation.x * Math.PI/180);
+                            break;
+                    }
                     if (angle2>2*Math.PI) {
                         angle2-=2*Math.PI;
                     }
                     var r = BGem3.Math.getDist(0,0,vy,vz);
-                    if (lg=='local') {
-                        scene.objs[i].mesh.transform[k].y = Math.cos(angle2) * r;
-                        scene.objs[i].mesh.transform[k].z = Math.sin(angle2) * r;
-                    } else {
-                        scene.objs[i].transform[k].y = Math.cos(angle2) * r;
-                        scene.objs[i].transform[k].z = Math.sin(angle2) * r;
-                    }
+                    scene.objs[i].transform[k].y = Math.cos(angle2) * r;
+                    scene.objs[i].transform[k].z = Math.sin(angle2) * r;
                 }
                 // Y AXIS
                 for (var j=0;j<scene.objs[i].transform.length;j++) {
                     var vx = scene.objs[i].transform[j].x,
                         vz = scene.objs[i].transform[j].z,
-                        angle = BGem3.Math.getAngle(0,0,vx,vz),
-                        angle2 = lg=='local' ?
-                            angle - (scene.objs[i].lRotation.y * Math.PI/180):
-                            angle - (scene.objs[i].gRotation.y * Math.PI/180);
+                        angle = BGem3.Math.getAngle(0,0,vx,vz);
+                    switch (lg) {
+                        case 'local':
+                            angle2 = angle - (scene.objs[i].lRotation.y * Math.PI/180);
+                            break;
+                        case 'global':
+                            angle2 = angle - (scene.objs[i].gRotation.y * Math.PI/180);
+                            break;
+                        case 'camera':
+                            angle2 = angle - (camera.rotation.y * Math.PI/180);
+                            break;
+                    }
                     if (angle2>2*Math.PI) {
                         angle2-=2*Math.PI;
                     }
                     var r = BGem3.Math.getDist(0,0,vx,vz);
-                    if (lg=='local') {
-                        scene.objs[i].mesh.transform[j].x = Math.cos(angle2) * r;
-                        scene.objs[i].mesh.transform[j].z = Math.sin(angle2) * r;
-                    } else {
-                        scene.objs[i].transform[j].x = Math.cos(angle2) * r;
-                        scene.objs[i].transform[j].z = Math.sin(angle2) * r;
-                    }
+                    scene.objs[i].transform[j].x = Math.cos(angle2) * r;
+                    scene.objs[i].transform[j].z = Math.sin(angle2) * r;
                 }
                 // Z AXIS
                 for (var l=0;l<scene.objs[i].transform.length;l++) {
                     var vx = scene.objs[i].transform[l].x,
                         vy = scene.objs[i].transform[l].y,
-                        angle = BGem3.Math.getAngle(0,0,vx,vy),
-                        angle2 = lg=='local' ?
-                            angle - (scene.objs[i].lRotation.z * Math.PI/180):
-                            angle - (scene.objs[i].gRotation.z * Math.PI/180);
+                        angle = BGem3.Math.getAngle(0,0,vx,vy);
+                    switch (lg) {
+                        case 'local':
+                            angle2 = angle - (scene.objs[i].lRotation.z * Math.PI/180);
+                            break;
+                        case 'global':
+                            angle2 = angle - (scene.objs[i].gRotation.z * Math.PI/180);
+                            break;
+                        case 'camera':
+                            angle2 = angle - (camera.rotation.z * Math.PI/180);
+                            break;
+                    }
                     if (angle2>2*Math.PI) {
                         angle2-=2*Math.PI;
                     }
                     var r = BGem3.Math.getDist(0,0,vx,vy);
-                    if (lg=='local') {
-                        scene.objs[i].mesh.transform[l].x = Math.cos(angle2) * r;
-                        scene.objs[i].mesh.transform[l].y = Math.sin(angle2) * r;
-                    } else {
-                        scene.objs[i].transform[l].x = Math.cos(angle2) * r;
-                        scene.objs[i].transform[l].y = Math.sin(angle2) * r;
-                    }
+                    scene.objs[i].transform[l].x = Math.cos(angle2) * r;
+                    scene.objs[i].transform[l].y = Math.sin(angle2) * r;
                 }
                 // (on mouseup) apply transform to local geometry
                 if (lg=='global' && scene.objs[i].applyGlobalRot) {
-                    scene.objs[i].mesh.transform = [];
-                    for (var m=0;m<scene.objs[i].transform.length;m++) {
-                        scene.objs[i].mesh.transform.push(JSON.parse(JSON.stringify(scene.objs[i].transform[m])));
-                    }
-                    scene.objs[i].gRotation = {x:0,y:0,z:0};
                     scene.objs[i].lRotation = {x:0,y:0,z:0};
                     scene.objs[i].applyGlobalRot = false;
                 }
             }
             if (lg=='local') {
+                renderer.debug.push(["f","rotate local"]);
                 cb('local',renderer.rotate);
+            } else if (lg=='global') {
+                renderer.debug.push(["f","rotate global"]);
+                cb('global',renderer.translate);
             } else {
-                // apply global rotation to local position
-                for (var i=0;i<scene.objs.length;i++) {
-                    scene.objs[i].lPosition = {x:0,y:0,z:0};
-                }
-                cb('global',renderer.project);
+                renderer.debug.push(["f","rotate camera"]);
+                cb(renderer.zSortObjs);
             }
         };
         this.translate = function(lg,cb) {
             for (var i=0;i<scene.objs.length;i++) {
                 for (var j=0;j<scene.objs[i].transform.length;j++) {
                     if (lg=='local') {
-                        scene.objs[i].mesh.transform[j].x += scene.objs[i].lPosition.x;
-                        scene.objs[i].mesh.transform[j].y += scene.objs[i].lPosition.y;
-                        scene.objs[i].mesh.transform[j].z += scene.objs[i].lPosition.z;
-                    } else {
+                        scene.objs[i].transform[j].x += scene.objs[i].lPosition.x;
+                        scene.objs[i].transform[j].y += scene.objs[i].lPosition.y;
+                        scene.objs[i].transform[j].z += scene.objs[i].lPosition.z;
+                    } else if (lg=='global') {
                         scene.objs[i].transform[j].x += scene.objs[i].gPosition.x;
                         scene.objs[i].transform[j].y += scene.objs[i].gPosition.y;
                         scene.objs[i].transform[j].z += scene.objs[i].gPosition.z;
+                    } else {
+                        scene.objs[i].transform[j].x -= camera.position.x;
+                        scene.objs[i].transform[j].y -= camera.position.y;
+                        scene.objs[i].transform[j].z -= camera.position.z;
                     }
                 }
             }
             if (lg=='local') {
+                renderer.debug.push(["f","translate local"]);
                 cb('global',renderer.translate);
-            } else {
+            } else if (lg=='global') {
                 for (var i=0;i<scene.objs.length;i++) {
                     // update superglobal position
                     scene.objs[i].sgPosition.x = JSON.parse(JSON.stringify(scene.objs[i])).transform[0].x;
@@ -239,7 +273,11 @@
                         }
                     }
                 }
-                cb(renderer.zSortObjs);
+                renderer.debug.push(["f","translate global"]);
+                cb('camera',renderer.rotate);
+            } else {
+                renderer.debug.push(["f","translate camera"]);
+                cb('camera',renderer.project);
             }
         };
         this.project = function(cb) {
@@ -340,9 +378,6 @@
                             ctx.strokeStyle="rgb("+r+","+g+","+b+")";
                             ctx.stroke();
                             // fill
-                            var r = Math.floor(fillStyle[0]*shade) + Math.floor(fillStyle[0]*shine + 50*shine),
-                                g = Math.floor(fillStyle[1]*shade) + Math.floor(fillStyle[1]*shine + 50*shine),
-                                b = Math.floor(fillStyle[2]*shade) + Math.floor(fillStyle[2]*shine + 50*shine);
                             ctx.fillStyle="rgb("+r+","+g+","+b+")";
                             ctx.fill();
                             // texture
@@ -439,7 +474,7 @@
                 m2 = y2/x2,
                 b1 = p1.y - m1*p1.x, // y = mx + b
                 b2 = p2.y - m2*p2.x,
-                mx = (b2-b1) / (m1-m2),
+                mx = (b2-b1) / (m1-m2), // m1*mx + b1 = m2*mx + b2
                 my = m1*mx + b1;
             for (var i=0;i<pts.length;i++) {
                 var dist = BGem3.Math.getDist(mx,my,pts[i].x,pts[i].y),
@@ -487,6 +522,75 @@
         this.bindEvents('desktop');
         this.bindEvents('potato');
     };
+
+    BGem3.CameraController = function() {
+        this.w = false;
+        this.a = false;
+        this.s = false;
+        this.d = false;
+        this.u = false;
+        this.o = false;
+        this.l = false;
+        this.r = false;
+        $(window).bind({
+            keydown: function(event) {
+                switch (event.keyCode) {
+                    case 87:
+                        cameraController.w = true; // W
+                        break;
+                    case 65:
+                        cameraController.a = true; // A
+                        break;
+                    case 83:
+                        cameraController.s = true; // S
+                        break;
+                    case 68:
+                        cameraController.d = true; // D
+                        break;
+                    case 38:
+                        cameraController.u = true; // up
+                        break;
+                    case 40:
+                        cameraController.o = true; // down
+                        break;
+                    case 37:
+                        cameraController.l = true; // left
+                        break;
+                    case 39:
+                        cameraController.r = true; // right
+                        break;
+                }
+            },
+            keyup: function(event) {
+                switch (event.keyCode) {
+                    case 87:
+                        cameraController.w = false; // W
+                        break;
+                    case 65:
+                        cameraController.a = false; // A
+                        break;
+                    case 83:
+                        cameraController.s = false; // S
+                        break;
+                    case 68:
+                        cameraController.d = false; // D
+                        break;
+                    case 38:
+                        cameraController.u = false; // up
+                        break;
+                    case 40:
+                        cameraController.o = false; // down
+                        break;
+                    case 37:
+                        cameraController.l = false; // left
+                        break;
+                    case 39:
+                        cameraController.r = false; // right
+                        break;
+                }
+            }
+        });
+    }
 
     BGem3.MathFunc = function() {
         this.getDist = function(x1,y1,x2,y2) {

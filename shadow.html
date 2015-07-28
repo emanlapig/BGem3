@@ -20,6 +20,7 @@
     		camera,
     		renderer,
             controller,
+            cameraController,
             canvas,
             ctx,
             clickArea;
@@ -66,7 +67,7 @@
 
             for (var i=0;i<50;i++) {
                 var floor = new BGem3.Obj3D( new BGem3.CubeMesh({size:3}) );
-                floor.mesh.textured = true;
+                floor.mesh.textured = false;
                 floor.gPosition = globalPos;
                 var fy = Math.floor(i/5);
                 var fx = Math.floor(i - fy*5);
@@ -77,11 +78,15 @@
 
             // pre-render action
             scene.action = function() {
-                /*renderer.debug.push(["gRot",BGem3.Math.round2(scene.objs[0].gRotation.x)+","+BGem3.Math.round2(scene.objs[0].gRotation.y)]);
-                renderer.debug.push(["lRot",BGem3.Math.round2(scene.objs[0].lRotation.x)+","+BGem3.Math.round2(scene.objs[0].lRotation.y)]);
-                renderer.debug.push(["gPos",BGem3.Math.round2(scene.objs[0].gPosition.x)+","+BGem3.Math.round2(scene.objs[0].gPosition.y)]);
-                renderer.debug.push(["lPos",BGem3.Math.round2(scene.objs[0].lPosition.x)+","+BGem3.Math.round2(scene.objs[0].lPosition.y)]);
-                renderer.debug.push(["sgPos",BGem3.Math.round2(scene.objs[0].sgPosition.x)+","+BGem3.Math.round2(scene.objs[0].sgPosition.y)]);*/
+                for (var i=0;i<scene.objs.length;i++) { //rotate scene
+                    //scene.objs[i].gRotation.x += 0.5;
+                    //scene.objs[i].gRotation.y += 0.5;
+                }
+                renderer.debug.push(["gRot",BGem3.Math.round2(scene.objs[2].gRotation.x)+","+BGem3.Math.round2(scene.objs[0].gRotation.y)]);
+                renderer.debug.push(["lRot",BGem3.Math.round2(scene.objs[2].lRotation.x)+","+BGem3.Math.round2(scene.objs[0].lRotation.y)]);
+                renderer.debug.push(["gPos",BGem3.Math.round2(scene.objs[2].gPosition.x)+","+BGem3.Math.round2(scene.objs[0].gPosition.y)]);
+                renderer.debug.push(["lPos",BGem3.Math.round2(scene.objs[2].lPosition.x)+","+BGem3.Math.round2(scene.objs[0].lPosition.y)]);
+                renderer.debug.push(["sgPos",BGem3.Math.round2(scene.objs[2].sgPosition.x)+","+BGem3.Math.round2(scene.objs[0].sgPosition.y)]);
             };
 
             renderer = new BGem3.Renderer();
@@ -101,6 +106,7 @@
             // user control
             clickArea = document.getElementById("click-area");
             controller = new BGem3.Controller({div:clickArea});
+            cameraController = new BGem3.CameraController();
     	}
     	// ---------------- END ON PAGE LOAD ----------------
 
@@ -108,7 +114,7 @@
         function render() {
             renderer.render();
             if (animationFrame) {
-                window.requestAnimationFrame(render);   
+                window.requestAnimationFrame(render);
             }
         }
 
